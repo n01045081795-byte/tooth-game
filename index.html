@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>치아 키우기 - Tooth Idle</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -11,19 +11,18 @@
         <header>
             <h1>🦷 치아 키우기</h1>
             <div class="stats-bar">
-                <span>💰 골드: <b id="gold-display">1000</b></span>
-                <span>💎 루비: <b id="ruby-display">0</b></span>
+                <div class="stat-item">💰 <span id="gold-display">1000</span></div>
+                <div class="stat-item">📈 +<span id="pps-display">0</span>/초</div>
             </div>
         </header>
 
         <main>
             <div id="battle-field">
-                <div id="status-msg">합성을 시작해보세요!</div>
+                <div id="status-msg">같은 레벨 치아를 드래그해서 합치세요!</div>
                 <div id="info-msg">인벤토리: <span id="slot-usage">0</span> / <span id="total-slots">24</span></div>
             </div>
 
-            <div id="inventory-grid" class="grid-24">
-                </div>
+            <div id="inventory-grid" class="grid-24"></div>
         </main>
 
         <footer>
@@ -33,6 +32,7 @@
             </div>
         </footer>
     </div>
+    <div id="drag-proxy" style="display:none; position:fixed; pointer-events:none; z-index:9999; font-weight:bold; color:white; text-shadow:0 0 5px black;"></div>
 
     <script src="script.js"></script>
 </body>
