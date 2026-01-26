@@ -2,126 +2,38 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>치아 키우기 (Tooth Idle)</title>
-    <style>
-        body { background: #2c3e50; color: white; text-align: center; font-family: sans-serif; }
-        #game-container { max-width: 500px; margin: auto; }
-        .stats { background: #34495e; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
-        #inventory { 
-            display: grid; 
-            grid-template-columns: repeat(8, 1fr); 
-            gap: 5px; background: #7f8c8d; padding: 10px; border-radius: 5px;
-        }
-        .slot { 
-            width: 100%; aspect-ratio: 1; background: #95a5a6; 
-            border: 1px solid #7f8c8d; display: flex; align-items: center; 
-            justify-content: center; font-size: 12px; cursor: pointer; border-radius: 3px;
-        }
-        .slot:hover { background: #bdc3c7; }
-        button { padding: 10px 20px; margin-top: 10px; cursor: pointer; font-weight: bold; }
-        .log { margin-top: 15px; font-size: 14px; color: #f1c40f; min-height: 20px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>치아 키우기 - Tooth Idle</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="game-container">
+        <header>
+            <h1>🦷 치아 키우기</h1>
+            <div class="stats-bar">
+                <span>💰 골드: <b id="gold-display">1000</b></span>
+                <span>💎 루비: <b id="ruby-display">0</b></span>
+            </div>
+        </header>
 
-<div id-container>
-    <h1>🦷 치아 키우기</h1>
-    <div class="stats">
-        골드: <span id="gold">0</span> | 루비: <span id="ruby">0</span><br>
-        칸 수: <span id="slot-count">24</span> / 32
+        <main>
+            <div id="battle-field">
+                <div id="status-msg">합성을 시작해보세요!</div>
+                <div id="info-msg">인벤토리: <span id="slot-usage">0</span> / <span id="total-slots">24</span></div>
+            </div>
+
+            <div id="inventory-grid" class="grid-24">
+                </div>
+        </main>
+
+        <footer>
+            <div class="button-group">
+                <button onclick="buyTooth()" class="btn-buy">🦷 치아 뽑기 (100G)</button>
+                <button id="expand-btn" onclick="expandInventory()" class="btn-expand">🎒 가방 확장 (5000G)</button>
+            </div>
+        </footer>
     </div>
-    
-    <div id="inventory"></div>
 
-    <div class="log" id="log-msg"></div>
-
-    <button onclick="buyTooth()">치아 구매 (100골드)</button>
-    <button onclick="expandInventory()" id="expand-btn">인벤토리 확장 (5000골드)</button>
-</div>
-
-<script>
-    let gold = 1000;
-    let ruby = 0;
-    let slots = 24;
-    let inventory = new Array(32).fill(0); // 0은 빈칸, 숫자는 치아 단계
-
-    // 화면 업데이트
-    function updateUI() {
-        document.getElementById('gold').innerText = gold;
-        document.getElementById('ruby').innerText = ruby;
-        document.getElementById('slot-count').innerText = slots;
-        
-        const invDiv = document.getElementById('inventory');
-        invDiv.innerHTML = '';
-        invDiv.style.gridTemplateRows = `repeat(${slots/8}, 1fr)`;
-
-        for(let i=0; i<slots; i++) {
-            const div = document.createElement('div');
-            div.className = 'slot';
-            div.innerText = inventory[i] > 0 ? 'LV' + inventory[i] : '';
-            div.onclick = () => combine(i);
-            invDiv.appendChild(div);
-        }
-    }
-
-    // 치아 구매
-    function buyTooth() {
-        if(gold >= 100) {
-            let emptyIdx = inventory.indexOf(0);
-            if(emptyIdx !== -1 && emptyIdx < slots) {
-                gold -= 100;
-                inventory[emptyIdx] = 1;
-                updateUI();
-            } else {
-                showLog("인벤토리가 가득 찼습니다!");
-            }
-        }
-    }
-
-    // 인벤토리 확장
-    function expandInventory() {
-        if(slots < 32 && gold >= 5000) {
-            gold -= 5000;
-            slots = 32;
-            document.getElementById('expand-btn').style.display = 'none';
-            updateUI();
-            showLog("인벤토리가 32칸으로 확장되었습니다!");
-        }
-    }
-
-    // 합성 로직 (도박성 포함)
-    function combine(idx) {
-        let currentLv = inventory[idx];
-        if(currentLv === 0 || currentLv >= 20) return;
-
-        // 같은 레벨의 다른 치아 찾기
-        for(let i=0; i<slots; i++) {
-            if(i !== idx && inventory[i] === currentLv) {
-                inventory[i] = 0; // 재료 하나 삭제
-                
-                // 대성공 확률 판정 (5%)
-                let isGreat = Math.random() < 0.05;
-                if(isGreat && currentLv <= 18) {
-                    inventory[idx] = currentLv + 2;
-                    showLog(`✨ 대성공! LV${currentLv+2}로 2단계 점프!`);
-                } else {
-                    inventory[idx] = currentLv + 1;
-                    showLog(`합성 성공: LV${currentLv+1}`);
-                }
-                
-                gold += currentLv * 10; // 합성 시 보너스 골드
-                updateUI();
-                return;
-            }
-        }
-        showLog("합성할 같은 레벨의 치아가 없습니다.");
-    }
-
-    function showLog(msg) {
-        document.getElementById('log-msg').innerText = msg;
-    }
-
-    updateUI();
-</script>
+    <script src="script.js"></script>
 </body>
 </html>
