@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v2.1.1</title>
-    <link rel="stylesheet" href="style.css?v=2.1.1">
+    <title>치아 연대기 v2.1.2</title>
+    <link rel="stylesheet" href="style.css?v=2.1.2">
 </head>
 <body>
     <div id="game-container">
@@ -32,7 +32,7 @@
                 </div>
             </div>
 
-            <div id="war-view" class="game-view" style="display:none; flex-direction:column;">
+            <div id="war-view" class="game-view" style="display:none;">
                 <div id="mercenary-camp">
                     <h4 style="color:var(--gold); margin:0 0 10px 5px;">🏰 용병 모집소</h4>
                     <div id="mercenary-list"></div>
@@ -47,11 +47,11 @@
                     <button onclick="sortInventory()" class="btn-red">🔄 자동 정렬</button>
                     <button onclick="openShop()" class="btn-gold">💎 Upgrade Lab</button>
                 </div>
-                <div id="inventory-container">
+                <div id="inventory-scroll-area">
                     <div id="inventory-grid"></div>
                 </div>
                 <div id="cheat-section">
-                    <input type="text" id="coupon-input" placeholder="쿠폰 코드 입력">
+                    <input type="text" id="coupon-input" placeholder="쿠폰 코드 입력 (100b)">
                     <button onclick="checkCoupon()" class="btn-sm">입력</button>
                     <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
                     <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
@@ -63,8 +63,8 @@
     <div id="battle-screen">
         <div id="battle-map">
             <div id="battle-header">
-                <span id="current-dungeon-name" style="font-size:18px; font-weight:bold;">던전 이름</span><br>
-                <span id="wave-info" style="font-size:14px; color:#e94560;">WAVE 1/5</span>
+                <span id="current-dungeon-name">던전 이름</span><br>
+                <span id="wave-info">WAVE 1/5</span>
             </div>
             <div id="player">👨‍🌾</div>
             <div id="enemy-spawn-area"></div>
@@ -73,11 +73,12 @@
         <div id="war-weapon-slots"></div>
     </div>
 
-    <div id="drag-proxy">🦷</div>
+    <div id="drag-proxy"></div>
+    
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=2.1.1"></script>
-    <script src="battle.js?v=2.1.1"></script>
-    <script src="script.js?v=2.1.1"></script>
+    <script src="data.js?v=2.1.2"></script>
+    <script src="battle.js?v=2.1.2"></script>
+    <script src="script.js?v=2.1.2"></script>
 </body>
 </html>
