@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 키우기 - Tooth Idle v1.4.0</title>
-    <link rel="stylesheet" href="style.css?v=1.4.0">
+    <title>치아 키우기 v1.5.0</title>
+    <link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 <body>
     <div id="game-container">
+        <nav id="top-nav">
+            <button onclick="switchView('mine')" id="tab-mine" class="active">⚒️ 치과 채굴</button>
+            <button onclick="switchView('war')" id="tab-war">⚔️ 전쟁터 출병</button>
+        </nav>
+
         <header>
-            <h1>🦷 치아 키우기 v1.4</h1>
             <div class="stats-bar">
                 <div class="stat-item">💰 <span id="gold-display">0</span></div>
                 <div class="stat-item">🏰 Stage <span id="stage-display">1</span></div>
@@ -17,21 +21,28 @@
         </header>
 
         <main>
-            <div id="battle-field">
-                <div id="background-layer"></div>
+            <div id="mine-view" class="game-view">
+                <div id="mine-bg"></div>
+                <div id="miner" onclick="manualMine()">⛏️</div>
+                <div id="mine-status">치과 채굴 중...</div>
+                <div id="mine-progress-container">
+                    <div id="mine-progress-fill"></div>
+                </div>
+            </div>
+
+            <div id="war-view" class="game-view" style="display:none;">
+                <div id="war-bg"></div>
                 <div id="warrior">🤺</div>
                 <div id="enemy-area">
-                    <div id="hp-bar-container" style="display:none;">
-                        <div id="hp-bar-fill"></div>
-                    </div>
+                    <div id="hp-bar-container"><div id="hp-bar-fill"></div></div>
                     <div id="enemy-sprite"></div>
                 </div>
-                <div id="status-msg">전투 중...</div>
+                <div id="weapon-controller"></div>
             </div>
 
             <div id="menu-bar">
                 <button onclick="sortInventory()" class="btn-mini">🔄 정렬</button>
-                <button id="auto-combine-btn" onclick="buyAutoCombine()" class="btn-mini">🤖 자동합성(구매)</button>
+                <button id="auto-btn" onclick="buyAutoCombine()" class="btn-mini">🤖 자동합성</button>
             </div>
 
             <div id="inventory-grid" class="grid-24"></div>
@@ -39,11 +50,11 @@
 
         <footer>
             <div class="button-group">
-                <button onclick="buyTooth()" class="btn-buy">🦷 치아 뽑기 (100G)</button>
-                <button id="expand-btn" onclick="expandInventory()" class="btn-expand">🎒 가방 확장 (5000G)</button>
+                <button onclick="manualMine()" class="btn-buy">⛏️ 수동 채굴</button>
+                <button id="expand-btn" onclick="expandInventory()" class="btn-expand">🎒 가방 확장</button>
             </div>
         </footer>
     </div>
-    <script src="script.js?v=1.4.0"></script>
+    <script src="script.js?v=1.5.0"></script>
 </body>
 </html>
