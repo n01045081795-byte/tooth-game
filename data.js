@@ -1,4 +1,4 @@
-// Version: 1.9.1 - Data & Web Audio Synthesizer
+// Version: 2.0.0 - Data & Sound & Mercenary
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
@@ -11,6 +11,13 @@ const TOOTH_DATA = {
         { name: "영롱한 다이아 곡괭이", cost: 2000000, power: 180, mineLv: 3, greatChance: 0.20 },
         { name: "카본 초합금 곡괭이", cost: 10000000, power: 300, mineLv: 4, greatChance: 0.25 },
         { name: "신화의 오리할콘 곡괭이", cost: 50000000, power: 500, mineLv: 4, greatChance: 0.35 }
+    ],
+    mercenaries: [
+        { id: 0, name: "농부 듀드", cost: 0, hpMul: 1, spd: 1, atkMul: 1, icon: "👨‍🌾" },
+        { id: 1, name: "견습 기사", cost: 10000, hpMul: 1.5, spd: 1.1, atkMul: 1.2, icon: "💂‍♂️" },
+        { id: 2, name: "왕국 근위병", cost: 50000, hpMul: 2.5, spd: 1.2, atkMul: 1.5, icon: "👮‍♂️" },
+        { id: 3, name: "엘프 궁수", cost: 200000, hpMul: 1.8, spd: 1.5, atkMul: 2.0, icon: "🧝‍♀️" },
+        { id: 4, name: "전설의 용사", cost: 1000000, hpMul: 5.0, spd: 1.3, atkMul: 3.0, icon: "🦸‍♂️" }
     ],
     dungeons: [
         "시작의 이끼 동굴", "낡은 해골 병영", "침묵의 지하 수로", "버려진 광산 심부", 
@@ -65,13 +72,10 @@ function playSfx(name) {
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            
             osc.frequency.setValueAtTime(600, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-            
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
-            
             osc.start();
             osc.stop(audioCtx.currentTime + 0.1);
             break;
@@ -81,7 +85,6 @@ function playSfx(name) {
     }
 }
 
-// 유틸리티 함수들
 function fNum(num) {
     if (num < 1000) return Math.floor(num);
     const units = ["", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
