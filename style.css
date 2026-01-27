@@ -1,33 +1,32 @@
-/* Version: 1.8.0 */
+/* Version: 1.8.1 - UI & Layout Fixes */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
 #game-container { width: 100%; max-width: 450px; height: 100vh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; }
 
-/* 인벤토리 컨테이너 - 모바일 스크롤바 강제 노출 */
 #inventory-container { 
     flex-grow: 1; overflow-y: scroll; background: var(--blue); 
     margin: 0 10px 10px; border-radius: 8px; border: 2px solid #000;
-    scrollbar-width: thin; scrollbar-color: var(--gold) var(--blue);
 }
-#inventory-container::-webkit-scrollbar { width: 8px; display: block !important; }
+#inventory-container::-webkit-scrollbar { width: 8px; display: block; }
 #inventory-container::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
 
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; }
 .slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 20px; }
 .locked-slot { background: #0a0a1a; color: #444; opacity: 0.5; }
 .attack-slot { border: 2px solid var(--red); }
+.lv-text { position: absolute; bottom: 1px; font-size: 8px; color: #aaa; pointer-events: none; }
 
-/* 상점 모달 */
-#shop-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; }
-#shop-content { background: var(--blue); padding: 20px; border-radius: 10px; width: 80%; text-align: center; border: 2px solid var(--gold); }
-.shop-item { margin: 15px 0; padding: 10px; background: #1a1a2e; border-radius: 5px; }
+#shop-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }
+#shop-content { background: var(--blue); padding: 20px; border-radius: 10px; width: 85%; max-height: 80vh; overflow-y: auto; text-align: center; border: 2px solid var(--gold); }
+.shop-item { margin-bottom: 10px; padding: 10px; background: #1a1a2e; border-radius: 8px; }
 
-/* 애니메이션 및 기타 */
 #miner-char { font-size: 50px; position: absolute; right: -20px; top: 10px; transform-origin: bottom center; }
 .swing { animation: hammer 0.2s ease-in-out; }
 @keyframes hammer { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } }
 .progress-container { width: 80%; height: 12px; background: #444; border-radius: 6px; margin: 10px 0; overflow: hidden; }
 #mine-bar { width: 0%; height: 100%; background: #00fbff; }
-.btn-sm { padding: 8px; border: none; border-radius: 5px; background: #4e4e4e; color: white; cursor: pointer; }
-.gold-btn { background: var(--gold); color: #000; font-weight: bold; padding: 8px 15px; border-radius: 5px; border:none; }
+
+.dungeon-btn { width: 100%; padding: 12px; margin-bottom: 5px; background: #243b55; color: #fff; border: 1px solid #444; border-radius: 5px; text-align: left; }
+.gold-btn { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 5px; border:none; }
+.btn-sm { padding: 8px; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; }
