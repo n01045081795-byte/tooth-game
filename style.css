@@ -1,40 +1,28 @@
-/* Version: 1.4.0 */
+/* Version: 1.5.0 */
 html, body { width: 100%; height: 100%; overscroll-behavior-y: none; overflow: hidden; position: fixed; margin: 0; }
-body { background-color: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; user-select: none; touch-action: none; }
+body { background-color: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; touch-action: none; }
 #game-container { width: 100%; max-width: 450px; background: #16213e; height: 100vh; display: flex; flex-direction: column; }
 
-#battle-field { height: 180px; margin: 10px; border-radius: 10px; position: relative; overflow: hidden; background-color: #243b55; }
-#background-layer { position: absolute; width: 200%; height: 100%; background: linear-gradient(90deg, transparent 49%, rgba(255,255,255,0.1) 50%); background-size: 50px 100%; animation: scrollBg 2s linear infinite; }
-@keyframes scrollBg { from { transform: translateX(0); } to { transform: translateX(-50px); } }
+#top-nav { display: grid; grid-template-columns: 1fr 1fr; background: #0f3460; }
+#top-nav button { padding: 12px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; }
+#top-nav button.active { color: #fff; border-bottom: 3px solid #e94560; background: rgba(233, 69, 96, 0.1); }
 
-#warrior { position: absolute; left: 30px; bottom: 40px; font-size: 45px; z-index: 10; }
-#enemy-area { position: absolute; right: 50px; bottom: 40px; display: flex; flex-direction: column; align-items: center; }
-#enemy-sprite { font-size: 45px; }
-#hp-bar-container { width: 60px; height: 8px; background: #444; border: 1px solid #fff; border-radius: 4px; margin-bottom: 5px; overflow: hidden; }
-#hp-bar-fill { width: 100%; height: 100%; background: #ff4d4d; }
+.game-view { height: 200px; margin: 10px; border-radius: 10px; position: relative; overflow: hidden; background: #243b55; }
 
-.dmg-text { position: absolute; color: #ffeb3b; font-weight: bold; font-size: 20px; animation: floatUp 0.6s ease-out forwards; z-index: 20; pointer-events: none; }
-@keyframes floatUp { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-40px); opacity: 0; } }
+/* 채굴 애니메이션 */
+#miner { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 60px; cursor: pointer; transition: transform 0.1s; z-index: 5; }
+#miner:active { transform: translate(-50%, -50%) rotate(-30deg) scale(1.2); }
+#mine-progress-container { position: absolute; bottom: 10px; left: 10%; width: 80%; height: 10px; background: #444; border-radius: 5px; }
+#mine-progress-fill { width: 0%; height: 100%; background: #00fbff; transition: width 0.1s; }
 
-.missile { position: absolute; left: 70px; bottom: 55px; font-size: 20px; z-index: 5; transition: all 0.3s linear; }
+/* 전쟁터 무기 컨트롤러 */
+#weapon-controller { position: absolute; bottom: 5px; left: 0; width: 100%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 0 5px; box-sizing: border-box; }
+.war-slot { aspect-ratio: 1; background: rgba(0,0,0,0.5); border: 1px solid #e94560; border-radius: 2px; font-size: 10px; display: flex; align-items: center; justify-content: center; position: relative; }
+.war-cd { position: absolute; bottom: 0; width: 100%; background: rgba(233, 69, 96, 0.6); height: 0%; }
 
+/* 치아 그래픽화 (레벨별 색상/그림자) */
+.tooth-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 20px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+
+/* 인벤토리 스타일 */
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; background: #0f3460; margin: 0 10px; border-radius: 5px; flex-grow: 1; }
-.slot { position: relative; aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; overflow: hidden;}
-
-/* 공격 슬롯 (상단 8칸) 강조 */
-.attack-slot { border-color: #e94560 !important; background: #1f1f3a; }
-.attack-slot::after { content: "ATK"; position: absolute; top: 1px; left: 1px; font-size: 5px; color: #e94560; }
-
-/* 쿨타임 표시 */
-.cooldown-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(0,0,0,0.6); pointer-events: none; transition: height 0.1s linear; }
-
-.slot.dragging { opacity: 0.1; }
-.slot.drag-over { border: 2px solid #fff; }
-
-.item-lv-20 { color: #00fbff; text-shadow: 0 0 15px #00fbff; }
-
-.button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
-button { cursor: pointer; border: none; font-weight: bold; border-radius: 8px; color: white; }
-.btn-buy { background: #e94560; }
-.btn-expand { background: #4e4e4e; }
-.btn-mini { padding: 5px 10px; font-size: 11px; background: #0f3460; border: 1px solid #4e4e4e; margin-left: 10px; margin-bottom: 5px;}
+.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.6rem; }
