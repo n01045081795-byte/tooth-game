@@ -1,103 +1,68 @@
-// Version: 1.5.0
+// Version: 1.5.0 - Main Engine
 let gold = 1000;
-let maxSlots = 24;
-let inventory = new Array(32).fill(0);
 let stage = 1;
+let pickaxeIdx = 0;
+let inventory = new Array(32).fill(0);
+let maxSlots = 24;
 let mineProgress = 0;
-let currentView = 'mine';
-
-// --- 그래픽 리소스 (40단계) ---
-const toothIcons = ["🦷", "🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷"];
-
-function getToothIcon(lv) {
-    if (lv === 0) return "";
-    let iconIdx = (lv - 1) % toothIcons.length;
-    let color = `hsl(${(lv * 30) % 360}, 70%, 70%)`;
-    return `<div class="tooth-icon" style="color:${color}">${toothIcons[iconIdx]}</div>`;
-}
-
-// --- 채굴 시스템 ---
-function autoMine() {
-    if (currentView !== 'mine') return;
-    mineProgress += 0.5; // 방치 시 채굴 속도
-    if (mineProgress >= 100) completeMine();
-    updateMineUI();
-}
+let dragStart = null;
 
 function manualMine() {
-    mineProgress += 5; // 터치 시 채굴 가속
-    if (mineProgress >= 100) completeMine();
-    updateMineUI();
+    const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
+    mineProgress += pick.power / 2; // 클릭 시 게이지 상승
+    if (mineProgress >= 100) {
+        mineProgress = 0;
+        addMinedTooth(pick);
+    }
+    updateUI();
 }
 
-function completeMine() {
-    mineProgress = 0;
+function addMinedTooth(pick) {
     let emptyIdx = inventory.indexOf(0);
     if (emptyIdx !== -1 && emptyIdx < maxSlots) {
-        // 5% 확률로 2레벨 채굴 (대성공)
-        let minedLv = Math.random() < 0.05 ? 2 : 1;
-        inventory[emptyIdx] = minedLv;
-        if (minedLv === 2) showMineMsg("✨ 채굴 대성공! 2레벨 획득!");
+        const isGreat = Math.random() < pick.greatChance;
+        inventory[emptyIdx] = isGreat ? pick.mineLv + 1 : pick.mineLv;
         renderInventory();
     }
 }
 
-function updateMineUI() {
-    const fill = document.getElementById('mine-progress-fill');
-    if (fill) fill.style.width = mineProgress + '%';
-}
-
-// --- 전쟁터 및 밸런스 시스템 ---
 function switchView(view) {
-    currentView = view;
     document.getElementById('mine-view').style.display = view === 'mine' ? 'block' : 'none';
     document.getElementById('war-view').style.display = view === 'war' ? 'block' : 'none';
-    document.getElementById('tab-mine').className = view === 'mine' ? 'active' : '';
-    document.getElementById('tab-war').className = view === 'war' ? 'active' : '';
-    if (view === 'war') {
-        renderWarWeapons();
-        spawnEnemy();
-    }
+    document.getElementById('tab-mine').classList.toggle('active', view === 'mine');
+    document.getElementById('tab-war').classList.toggle('active', view === 'war');
 }
 
-// 완화된 대미지 밸런스 (레벨당 약 1.5배)
-function getDamage(lv) {
-    return Math.floor(10 * Math.pow(1.5, lv - 1)) + (lv * 5);
+// 인벤토리 자유 스와프 로직
+function setupSwap(slot, i) {
+    slot.ontouchstart = () => { if(inventory[i]>0) dragStart = i; };
+    slot.ontouchend = (e) => {
+        const target = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        if (target && target.dataset.index !== undefined) {
+            const to = parseInt(target.dataset.index);
+            if (inventory[to] === inventory[dragStart] && inventory[to] > 0) {
+                inventory[to]++; inventory[dragStart] = 0; // 합성
+            } else {
+                const temp = inventory[to]; inventory[to] = inventory[dragStart]; inventory[dragStart] = temp; // 스와프
+            }
+            renderInventory();
+        }
+        dragStart = null;
+    };
 }
 
-function renderWarWeapons() {
-    const container = document.getElementById('weapon-controller');
-    container.innerHTML = '';
-    // 인벤토리 맨 윗줄 8개만 전쟁터 하단에 표시
-    for (let i = 0; i < 8; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'war-slot';
-        slot.innerHTML = getToothIcon(inventory[i]) + `<div class="war-cd" id="cd-${i}"></div>`;
-        container.appendChild(slot);
-    }
-}
-
-// --- 기본 엔진 ---
-function renderInventory() {
-    const grid = document.getElementById('inventory-grid');
-    grid.innerHTML = '';
-    for (let i = 0; i < maxSlots; i++) {
-        const slot = document.createElement('div');
-        slot.className = `slot lv-${inventory[i]}`;
-        slot.dataset.index = i;
-        slot.innerHTML = getToothIcon(inventory[i]) + (inventory[i] > 0 ? `<span>Lv.${inventory[i]}</span>` : '');
-        setupDragEvents(slot, i);
-        grid.appendChild(slot);
-    }
-    if (currentView === 'war') renderWarWeapons();
+function updateUI() {
+    document.getElementById('gold-display').innerText = fNum(gold);
+    document.getElementById('stage-display').innerText = stage;
+    document.getElementById('mine-bar').style.width = mineProgress + '%';
 }
 
 function init() {
-    loadGame();
     renderInventory();
-    setInterval(autoMine, 100); // 0.1초마다 채굴 진행
-    setInterval(() => { if(currentView === 'war') battleLoop(); }, 100);
+    setInterval(() => {
+        mineProgress += (TOOTH_DATA.pickaxes[pickaxeIdx].power / 50); // 자동 채굴
+        if(mineProgress >= 100) { mineProgress = 0; addMinedTooth(TOOTH_DATA.pickaxes[pickaxeIdx]); }
+        updateUI();
+    }, 100);
 }
-
-// (이하 기존 save, load, drag/drop, battle 로직은 v1.4와 유사하게 유지하되 대미지 공식만 getDamage로 대체)
 init();
