@@ -27,16 +27,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margi
 .progress-container { width: 80%; height: 10px; background: #444; border-radius: 5px; overflow: hidden; margin: 0 auto; }
 #mine-bar { width: 0%; height: 100%; background: #00fbff; transition: width 0.1s linear; }
 
-/* 인벤토리 섹션 */
+/* 인벤토리 섹션 (레이아웃 분리) */
 #inventory-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; background: var(--bg); }
-#action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 20px; width: 100%; justify-items: center; }
+#action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px 20px; width: 100%; justify-items: center; flex-shrink: 0; }
 #action-bar button { width: 100%; }
 
 #inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; }
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 8px; }
 
-/* 쿠폰 입력창 복구 */
-#cheat-section { padding: 10px; background: #222; display: flex; gap: 5px; flex-shrink: 0; width: 100%; border-top: 1px solid #444; }
+/* 쿠폰 입력창 복구 및 스타일 */
+#cheat-section { padding: 10px; background: #222; display: flex; gap: 5px; flex-shrink: 0; width: 100%; border-top: 1px solid #444; align-items: center; }
 #coupon-input { flex-grow: 1; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; -webkit-user-select: text; user-select: text; }
 
 /* 슬롯 및 드래그 */
@@ -49,6 +49,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margi
 .shiny-effect { animation: shine 0.5s ease-in-out; border: 2px solid var(--gold) !important; }
 @keyframes shine { 0% { background: #fff; transform: scale(1.2); } 100% { background: #1a1a2e; transform: scale(1); } }
 
+/* 드래그 프록시 (핵심: pointer-events: none) */
 #drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
 
 /* 던전 뷰 */
