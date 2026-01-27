@@ -1,4 +1,4 @@
-// Version: 1.8.2 - Data & Units
+// Version: 1.9.0 - Data & Sound Manager
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
@@ -21,6 +21,22 @@ const TOOTH_DATA = {
     ],
     invExpansion: [5000, 50000, 500000, 5000000]
 };
+
+// 사운드 매니저
+const SOUNDS = {
+    mine: new Audio('sfx/mine.mp3'),
+    merge: new Audio('sfx/merge.mp3'),
+    great: new Audio('sfx/great.mp3'),
+    attack: new Audio('sfx/attack.mp3'),
+    hit: new Audio('sfx/hit.mp3')
+};
+
+function playSfx(name) {
+    if (SOUNDS[name]) {
+        SOUNDS[name].currentTime = 0;
+        SOUNDS[name].play().catch(() => {}); // 자동재생 차단 방지
+    }
+}
 
 function fNum(num) {
     if (num < 1000) return Math.floor(num);
