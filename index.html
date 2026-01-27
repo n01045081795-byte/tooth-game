@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v1.8.3</title>
-    <link rel="stylesheet" href="style.css?v=1.8.3">
+    <title>치아 연대기 v1.8.4</title>
+    <link rel="stylesheet" href="style.css?v=1.8.4">
 </head>
 <body>
     <div id="game-container">
@@ -20,14 +20,16 @@
             </div>
         </header>
 
-        <main>
+        <main id="main-content">
             <div id="mine-view" class="game-view">
                 <div id="mine-rock-area" onclick="manualMine()">
                     <div id="giant-tooth">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
-                <div id="pickaxe-name">허름한 나무 곡괭이</div>
-                <div class="progress-container"><div id="mine-bar"></div></div>
+                <div id="pickaxe-info">
+                    <div id="pickaxe-name">허름한 나무 곡괭이</div>
+                    <div class="progress-container"><div id="mine-bar"></div></div>
+                </div>
             </div>
 
             <div id="war-view" class="game-view" style="display:none;">
@@ -37,12 +39,13 @@
                 
                 <div id="battle-screen" style="display:none;">
                     <div id="battle-map">
+                        <div id="battle-header">
+                            <span id="current-dungeon-name">던전 이름</span>
+                            <span id="wave-info">WAVE 1/5</span>
+                        </div>
                         <div id="player">👨‍🌾</div>
                         <div id="enemy-spawn-area"></div>
-                        <div id="battle-ui">
-                            <div id="wave-info">WAVE 1/5</div>
-                            <button onclick="exitDungeon()" class="btn-exit">후퇴</button>
-                        </div>
+                        <button onclick="exitDungeon()" class="btn-exit">후퇴</button>
                     </div>
                     <div id="war-weapon-slots"></div>
                 </div>
@@ -60,10 +63,12 @@
         </main>
     </div>
 
+    <div id="drag-proxy" style="display:none; pointer-events:none; position:fixed; z-index:5000; opacity:0.6; font-size:30px;"></div>
+
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=1.8.3"></script>
-    <script src="battle.js?v=1.8.3"></script>
-    <script src="script.js?v=1.8.3"></script>
+    <script src="data.js?v=1.8.4"></script>
+    <script src="battle.js?v=1.8.4"></script>
+    <script src="script.js?v=1.8.4"></script>
 </body>
 </html>
