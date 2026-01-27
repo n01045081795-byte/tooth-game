@@ -1,4 +1,4 @@
-// Version: 2.1.2 - Drag Fix & Cheat UI
+// Version: 2.1.2 - Drag Logic Fix & Layout Update
 let gold = 1000;
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -66,6 +66,7 @@ function renderInventory() {
             // 포인터 이벤트 (PC/모바일 통합 드래그)
             slot.onpointerdown = (e) => {
                 if (inventory[i] > 0) {
+                    e.preventDefault(); 
                     dragStartIdx = i;
                     slot.classList.add('picked');
                     
@@ -74,7 +75,7 @@ function renderInventory() {
                     dragProxy.style.display = 'block';
                     moveProxy(e);
                     
-                    slot.setPointerCapture(e.pointerId); // 포인터 캡처
+                    slot.setPointerCapture(e.pointerId);
                 }
             };
             
@@ -88,7 +89,7 @@ function renderInventory() {
                     slot.classList.remove('picked');
                     dragProxy.style.display = 'none';
                     
-                    // 실제 놓인 위치 찾기 (프록시 무시하고 아래 요소 찾기)
+                    // pointer-events: none 덕분에 아래 요소를 찾을 수 있음
                     const elements = document.elementsFromPoint(e.clientX, e.clientY);
                     const targetSlot = elements.find(el => el.classList.contains('slot') && el !== slot);
                     
@@ -116,7 +117,7 @@ function moveProxy(e) {
     dragProxy.style.left = (e.clientX) + 'px';
     dragProxy.style.top = (e.clientY) + 'px';
     
-    // 시각적 피드백
+    // 타겟 슬롯 강조
     document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target'));
     const elements = document.elementsFromPoint(e.clientX, e.clientY);
     const targetSlot = elements.find(el => el.classList.contains('slot'));
@@ -149,7 +150,7 @@ function massMerge(lv) {
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     
     for(let i=0; i < indices.length - 1; i += 2) {
-        const isGreat = Math.random() < pick.greatChance;
+        const isGreat = Math.random() < pick.greatChance; // 개별 확률 적용
         const nextLv = isGreat ? lv + 2 : lv + 1;
         
         inventory[indices[i+1]] = nextLv;
