@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v2.0.0</title>
-    <link rel="stylesheet" href="style.css?v=2.0.0">
+    <title>치아 연대기 v2.1.0</title>
+    <link rel="stylesheet" href="style.css?v=2.1.0">
 </head>
 <body>
     <div id="game-container">
@@ -20,11 +20,11 @@
             </div>
         </header>
 
-        <main id="main-content">
-            <div id="mine-view" class="game-view" style="height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                <div id="mine-rock-area" onclick="manualMine()" style="position:relative; width:120px; height:120px;">
-                    <div id="giant-tooth" style="font-size:60px; position:absolute; left:30px; top:30px;">🦷</div>
-                    <div id="miner-char" style="font-size:50px; position:absolute; right:-15px; top:10px;">⛏️</div>
+        <main style="display:flex; flex-direction:column; flex-grow:1; overflow:hidden;">
+            <div id="mine-view" class="game-view">
+                <div id="mine-rock-area" onclick="manualMine()">
+                    <div id="giant-tooth">🦷</div>
+                    <div id="miner-char">⛏️</div>
                 </div>
                 <div id="pickaxe-info" style="text-align:center; width:80%;">
                     <div id="pickaxe-name" style="font-size:12px; color:#aaa; margin-bottom:5px;">허름한 나무 곡괭이</div>
@@ -32,7 +32,7 @@
                 </div>
             </div>
 
-            <div id="war-view" class="game-view" style="display:none; flex-grow:1; flex-direction:column; overflow:hidden;">
+            <div id="war-view" class="game-view" style="display:none; flex-direction:column;">
                 <div id="mercenary-camp">
                     <h4 style="color:var(--gold); margin:0 0 10px 5px;">🏰 용병 모집소</h4>
                     <div id="mercenary-list"></div>
@@ -51,6 +51,13 @@
                     <div id="inventory-grid"></div>
                 </div>
             </div>
+
+            <div id="cheat-section">
+                <input type="text" id="coupon-input" placeholder="쿠폰 코드 입력">
+                <button onclick="checkCoupon()" class="btn-sm">입력</button>
+                <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
+                <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
+            </div>
         </main>
     </div>
 
@@ -67,10 +74,11 @@
         <div id="war-weapon-slots"></div>
     </div>
 
+    <div id="drag-proxy">🦷</div>
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=2.0.0"></script>
-    <script src="battle.js?v=2.0.0"></script>
-    <script src="script.js?v=2.0.0"></script>
+    <script src="data.js?v=2.1.0"></script>
+    <script src="battle.js?v=2.1.0"></script>
+    <script src="script.js?v=2.1.0"></script>
 </body>
 </html>
