@@ -3,27 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 키우기 - Tooth Idle v1.1.0</title>
-    <link rel="stylesheet" href="style.css?v=1.1.0">
+    <title>치아 키우기 - Tooth Idle v1.2.0</title>
+    <link rel="stylesheet" href="style.css?v=1.2.0">
 </head>
 <body>
     <div id="game-container">
         <header>
-            <h1>🦷 치아 키우기</h1>
+            <h1>🦷 치아 키우기 v1.2</h1>
             <div class="stats-bar">
                 <div class="stat-item">💰 <span id="gold-display">0</span></div>
-                <div class="stat-item">📈 +<span id="pps-display">0</span>/초</div>
+                <div class="stat-item">🏰 Stage <span id="stage-display">1</span></div>
             </div>
         </header>
 
         <main>
             <div id="battle-field">
+                <div id="background-layer"></div>
                 <div id="warrior">🤺</div>
-                <div id="enemy">👾</div>
-                <div id="status-msg">전투 중...</div>
+                <div id="enemy-container"></div>
+                <div id="status-msg">스테이지 진행 중...</div>
             </div>
 
-            <div id="inventory-info">인벤토리: <span id="slot-usage">0</span> / <span id="total-slots">24</span></div>
+            <div id="menu-bar">
+                <button onclick="sortInventory()" class="btn-mini">🔄 정렬</button>
+                <button id="auto-combine-btn" onclick="buyAutoCombine()" class="btn-mini">🤖 자동합성(구매)</button>
+            </div>
+
             <div id="inventory-grid" class="grid-24"></div>
         </main>
 
@@ -34,9 +39,6 @@
             </div>
         </footer>
     </div>
-    
-    <div id="drag-proxy" style="display:none; position:fixed; pointer-events:none; z-index:9999;"></div>
-
-    <script src="script.js?v=1.1.0"></script>
+    <script src="script.js?v=1.2.0"></script>
 </body>
 </html>
