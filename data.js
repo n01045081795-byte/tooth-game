@@ -1,16 +1,16 @@
-// Version: 1.6.0 - Data, Utils & Dungeon List
+// Version: 1.7.0 - Data & Utils
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, power: 10, mineLv: 1, greatChance: 0.01 },
-        { name: "무딘 구리 곡괭이", cost: 1000, power: 15, mineLv: 1, greatChance: 0.03 },
-        { name: "튼튼한 철 곡괭이", cost: 5000, power: 22, mineLv: 2, greatChance: 0.05 },
-        { name: "연마된 강철 곡괭이", cost: 25000, power: 30, mineLv: 2, greatChance: 0.08 },
-        { name: "빛나는 황금 곡괭이", cost: 100000, power: 45, mineLv: 2, greatChance: 0.12 },
-        { name: "고강도 티타늄 곡괭이", cost: 500000, power: 65, mineLv: 3, greatChance: 0.15 },
-        { name: "영롱한 다이아 곡괭이", cost: 2000000, power: 100, mineLv: 3, greatChance: 0.20 },
-        { name: "카본 초합금 곡괭이", cost: 10000000, power: 150, mineLv: 4, greatChance: 0.25 },
-        { name: "신화의 오리할콘 곡괭이", cost: 50000000, power: 250, mineLv: 4, greatChance: 0.35 }
+        { name: "무딘 구리 곡괭이", cost: 1000, power: 18, mineLv: 1, greatChance: 0.03 },
+        { name: "튼튼한 철 곡괭이", cost: 5000, power: 28, mineLv: 2, greatChance: 0.05 },
+        { name: "연마된 강철 곡괭이", cost: 25000, power: 45, mineLv: 2, greatChance: 0.08 },
+        { name: "빛나는 황금 곡괭이", cost: 100000, power: 70, mineLv: 2, greatChance: 0.12 },
+        { name: "고강도 티타늄 곡괭이", cost: 500000, power: 110, mineLv: 3, greatChance: 0.15 },
+        { name: "영롱한 다이아 곡괭이", cost: 2000000, power: 180, mineLv: 3, greatChance: 0.20 },
+        { name: "카본 초합금 곡괭이", cost: 10000000, power: 300, mineLv: 4, greatChance: 0.25 },
+        { name: "신화의 오리할콘 곡괭이", cost: 50000000, power: 500, mineLv: 4, greatChance: 0.35 }
     ],
     dungeons: [
         "시작의 이끼 동굴", "낡은 해골 병영", "침묵의 지하 수로", "버려진 광산 심부", 
@@ -31,7 +31,7 @@ function fNum(num) {
 
 function getAtk(lv) {
     if (lv === 0) return 0;
-    return Math.floor(15 * Math.pow(1.5, lv - 1)); // 약 1.5배씩 증가
+    return Math.floor(20 * Math.pow(1.55, lv - 1));
 }
 
 function getToothIcon(lv) {
