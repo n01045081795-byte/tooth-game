@@ -1,4 +1,4 @@
-// Version: 1.8.0 - Battle Engine
+// Version: 1.8.1 - Battle Engine Recovery
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -75,18 +75,18 @@ function shoot(slotIdx) {
     missiles.push({ el: mEl, x: 50, y: 50, vx: Math.cos(angle) * 3.5, vy: Math.sin(angle) * 3.5, dmg: getAtk(inventory[slotIdx]) });
 }
 
-function checkWaveClear() {
-    if (enemies.length === 0) {
-        if (isBossWave) { alert("던전 클리어!"); if (unlockedDungeon <= currentDungeonIdx) unlockedDungeon++; exitDungeon(); }
-        else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); }
-    }
-}
-
 function exitDungeon() {
     dungeonActive = false;
     enemies.forEach(en => en.el.remove()); missiles.forEach(m => m.el.remove());
     enemies = []; missiles = [];
     document.getElementById('battle-screen').style.display = 'none';
     document.getElementById('dungeon-list').style.display = 'block';
-    renderDungeonList();
+    if(window.renderDungeonList) renderDungeonList();
+}
+
+function checkWaveClear() {
+    if (enemies.length === 0) {
+        if (isBossWave) { alert("던전 클리어!"); if (unlockedDungeon <= currentDungeonIdx) unlockedDungeon++; exitDungeon(); }
+        else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); }
+    }
 }
