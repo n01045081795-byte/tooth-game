@@ -1,24 +1,26 @@
-// Version: 1.5.1 - Main Engine
+// Version: 1.6.0 - Main Engine with Dungeon Logic
 let gold = 1000;
-let stage = 1;
+let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
 let inventory = new Array(32).fill(0);
 let maxSlots = 24;
 let mineProgress = 0;
 let currentView = 'mine';
 let dragStart = null;
-let hasAutoCombine = false;
 
 function saveGame() {
-    localStorage.setItem('toothSaveV151', JSON.stringify({ gold, maxSlots, inventory, stage, pickaxeIdx, hasAutoCombine }));
+    localStorage.setItem('toothSaveV160', JSON.stringify({ gold, maxSlots, inventory, unlockedDungeon, pickaxeIdx }));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV151');
+    const saved = localStorage.getItem('toothSaveV160');
     if (saved) {
         const d = JSON.parse(saved);
-        gold = d.gold; maxSlots = d.maxSlots; inventory = d.inventory;
-        stage = d.stage; pickaxeIdx = d.pickaxeIdx; hasAutoCombine = d.hasAutoCombine;
+        gold = d.gold || 1000;
+        maxSlots = d.maxSlots || 24;
+        inventory = d.inventory || new Array(32).fill(0);
+        unlockedDungeon = d.unlockedDungeon || 1;
+        pickaxeIdx = d.pickaxeIdx || 0;
     }
 }
 
@@ -28,7 +30,25 @@ function switchView(view) {
     document.getElementById('war-view').style.display = view === 'war' ? 'block' : 'none';
     document.getElementById('tab-mine').classList.toggle('active', view === 'mine');
     document.getElementById('tab-war').classList.toggle('active', view === 'war');
+    if (view === 'war') renderDungeonList();
     renderInventory();
+}
+
+function renderDungeonList() {
+    const list = document.getElementById('dungeon-list');
+    list.innerHTML = '<h3>원정할 던전을 선택하세요</h3>';
+    TOOTH_DATA.dungeons.forEach((name, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'dungeon-btn';
+        if (idx < unlockedDungeon) {
+            btn.innerHTML = `<span>Lv.${idx+1}</span> ${name}`;
+            btn.onclick = () => startDungeon(idx);
+        } else {
+            btn.innerHTML = `🔒 잠김 (이전 던전 클리어 필요)`;
+            btn.disabled = true;
+        }
+        list.appendChild(btn);
+    });
 }
 
 function manualMine() {
@@ -38,8 +58,7 @@ function manualMine() {
         mineProgress = 0;
         let emptyIdx = inventory.indexOf(0);
         if (emptyIdx !== -1 && emptyIdx < maxSlots) {
-            const isGreat = Math.random() < pick.greatChance;
-            inventory[emptyIdx] = isGreat ? pick.mineLv + 1 : pick.mineLv;
+            inventory[emptyIdx] = Math.random() < pick.greatChance ? pick.mineLv + 1 : pick.mineLv;
             renderInventory();
         }
     }
@@ -48,7 +67,6 @@ function manualMine() {
 
 function renderInventory() {
     const grid = document.getElementById('inventory-grid');
-    if (!grid) return;
     grid.innerHTML = '';
     for (let i = 0; i < maxSlots; i++) {
         const slot = document.createElement('div');
@@ -60,45 +78,35 @@ function renderInventory() {
         setupSwap(slot, i);
         grid.appendChild(slot);
     }
-    if (currentView === 'war') renderWarWeapons();
 }
 
 function setupSwap(slot, i) {
-    slot.ontouchstart = (e) => { if(inventory[i]>0) dragStart = i; };
+    slot.ontouchstart = () => { if(inventory[i]>0) dragStart = i; };
     slot.ontouchend = (e) => {
         if (dragStart === null) return;
-        const touch = e.changedTouches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const target = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
         if (target && target.dataset.index !== undefined) {
             const to = parseInt(target.dataset.index);
-            if (to !== dragStart) {
-                if (inventory[to] === inventory[dragStart] && inventory[to] > 0) {
-                    inventory[to]++; inventory[dragStart] = 0;
-                } else {
-                    const temp = inventory[to]; inventory[to] = inventory[dragStart]; inventory[dragStart] = temp;
-                }
-                renderInventory();
+            if (inventory[to] === inventory[dragStart] && inventory[to] > 0) {
+                inventory[to]++; inventory[dragStart] = 0;
+            } else {
+                [inventory[to], inventory[dragStart]] = [inventory[dragStart], inventory[to]];
             }
+            renderInventory();
         }
         dragStart = null;
     };
 }
 
 function upgradePickaxe() {
-    if (pickaxeIdx < TOOTH_DATA.pickaxes.length - 1) {
-        const next = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
-        if (gold >= next.cost) {
-            gold -= next.cost;
-            pickaxeIdx++;
-            renderInventory();
-            updateUI();
-        }
+    const next = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
+    if (next && gold >= next.cost) {
+        gold -= next.cost; pickaxeIdx++; updateUI();
     }
 }
 
 function updateUI() {
     document.getElementById('gold-display').innerText = fNum(gold);
-    document.getElementById('stage-display').innerText = stage;
     document.getElementById('mine-bar').style.width = mineProgress + '%';
     document.getElementById('pickaxe-name').innerText = TOOTH_DATA.pickaxes[pickaxeIdx].name;
     saveGame();
@@ -111,18 +119,10 @@ window.onload = () => {
     setInterval(() => {
         if(currentView === 'mine') {
             mineProgress += (TOOTH_DATA.pickaxes[pickaxeIdx].power / 100);
-            if(mineProgress >= 100) {
-                mineProgress = 0;
-                let idx = inventory.indexOf(0);
-                if(idx !== -1 && idx < maxSlots) {
-                    inventory[idx] = TOOTH_DATA.pickaxes[pickaxeIdx].mineLv;
-                    renderInventory();
-                }
-            }
+            if(mineProgress >= 100) { mineProgress = 0; manualMine(); }
             updateUI();
-        } else {
-            spawnEnemy();
+        } else if (dungeonActive) {
             updateBattle();
         }
-    }, 100);
+    }, 50);
 };
