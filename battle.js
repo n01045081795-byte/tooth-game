@@ -1,4 +1,4 @@
-// Version: 1.8.1 - Battle Engine Recovery
+// Version: 1.8.2 - Battle Engine with Player Movement
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -6,12 +6,17 @@ let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
 let dungeonActive = false;
+let playerPos = { x: 50, y: 50 };
 
 function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
+    playerPos = { x: 50, y: 50 };
     document.getElementById('dungeon-list').style.display = 'none';
     document.getElementById('battle-screen').style.display = 'block';
+    document.getElementById('inventory-container').style.display = 'none';
+    document.getElementById('action-bar').style.display = 'none';
+    renderWarWeapons();
     spawnWave();
 }
 
@@ -47,6 +52,8 @@ function updateBattle() {
         }
         if (weaponCD[i] > 0) weaponCD[i]--;
     }
+    
+    // 미사일 이동
     missiles.forEach((m, mIdx) => {
         m.x += m.vx; m.y += m.vy;
         m.el.style.left = m.x + '%'; m.el.style.top = m.y + '%';
@@ -59,10 +66,23 @@ function updateBattle() {
         });
         if (m.x < -20 || m.x > 120 || m.y < -20 || m.y > 120) { m.el.remove(); missiles.splice(mIdx, 1); }
     });
+    
+    // 적 이동 (플레이어 추적)
     enemies.forEach(en => {
-        const dx = 50 - en.x; const dy = 50 - en.y; const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist > 5) { en.x += (dx/dist) * (en.isBoss ? 0.25 : 0.6); en.el.style.left = en.x + '%'; en.el.style.top = en.y + '%'; }
+        const dx = playerPos.x - en.x; const dy = playerPos.y - en.y; const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > 2) { en.x += (dx/dist) * (en.isBoss ? 0.2 : 0.5); en.el.style.left = en.x + '%'; en.el.style.top = en.y + '%'; }
     });
+}
+
+function handleBattleTouch(e) {
+    if(!dungeonActive) return;
+    const rect = document.getElementById('battle-map').getBoundingClientRect();
+    const touch = e.touches[0];
+    playerPos.x = ((touch.clientX - rect.left) / rect.width) * 100;
+    playerPos.y = ((touch.clientY - rect.top) / rect.height) * 100;
+    const p = document.getElementById('player');
+    p.style.left = playerPos.x + '%';
+    p.style.top = playerPos.y + '%';
 }
 
 function shoot(slotIdx) {
@@ -71,8 +91,8 @@ function shoot(slotIdx) {
     const mEl = document.createElement('div');
     mEl.className = 'missile'; mEl.innerText = '✨';
     area.appendChild(mEl);
-    const angle = Math.atan2(target.y - 50, target.x - 50);
-    missiles.push({ el: mEl, x: 50, y: 50, vx: Math.cos(angle) * 3.5, vy: Math.sin(angle) * 3.5, dmg: getAtk(inventory[slotIdx]) });
+    const angle = Math.atan2(target.y - playerPos.y, target.x - playerPos.x);
+    missiles.push({ el: mEl, x: playerPos.x, y: playerPos.y, vx: Math.cos(angle) * 3.5, vy: Math.sin(angle) * 3.5, dmg: getAtk(inventory[slotIdx]) });
 }
 
 function exitDungeon() {
@@ -81,12 +101,25 @@ function exitDungeon() {
     enemies = []; missiles = [];
     document.getElementById('battle-screen').style.display = 'none';
     document.getElementById('dungeon-list').style.display = 'block';
-    if(window.renderDungeonList) renderDungeonList();
+    document.getElementById('inventory-container').style.display = 'block';
+    document.getElementById('action-bar').style.display = 'grid';
+    renderDungeonList();
 }
 
 function checkWaveClear() {
     if (enemies.length === 0) {
         if (isBossWave) { alert("던전 클리어!"); if (unlockedDungeon <= currentDungeonIdx) unlockedDungeon++; exitDungeon(); }
         else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); }
+    }
+}
+
+function renderWarWeapons() {
+    const container = document.getElementById('war-weapon-slots');
+    container.innerHTML = '';
+    for (let i = 0; i < 8; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'war-slot';
+        slot.innerHTML = getToothIcon(inventory[i]);
+        container.appendChild(slot);
     }
 }
