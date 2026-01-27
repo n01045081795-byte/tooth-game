@@ -1,4 +1,4 @@
-// Version: 1.9.0 - Battle Engine Fixed
+// Version: 2.0.0 - Battle Engine with Mercenary
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -6,37 +6,28 @@ let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
 let dungeonActive = false;
-let playerPos = { x: 50, y: 70 };
+let playerPos = { x: 50, y: 80 };
+let currentMercenary = TOOTH_DATA.mercenaries[0]; // 기본 용병
 
-function renderDungeonList() {
-    const list = document.getElementById('dungeon-list');
-    if (!list) return;
-    list.innerHTML = ''; // 초기화
-    TOOTH_DATA.dungeons.forEach((name, idx) => {
-        const div = document.createElement('div');
-        const isUnlocked = idx < unlockedDungeon;
-        div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`;
-        if (isUnlocked) {
-            div.innerHTML = `<h4>⚔️ ${name}</h4><p>권장 공격력: Lv.${idx + 1} 이상</p>`;
-            div.onclick = () => startDungeon(idx);
-        } else {
-            div.innerHTML = `<h4>🔒 잠긴 던전</h4><p>Lv.${idx} 던전 클리어 시 해금</p>`;
-        }
-        list.appendChild(div);
-    });
+function updateMercenary() {
+    currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx];
+    const p = document.getElementById('player');
+    if(p) p.innerText = currentMercenary.icon;
 }
 
 function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
-    playerPos = { x: 50, y: 75 };
+    playerPos = { x: 50, y: 80 };
     
-    // UI 전환
+    // UI 전체 전환 (채굴 탭 접근 불가)
+    document.getElementById('top-nav').style.display = 'none';
     document.getElementById('dungeon-list-container').style.display = 'none';
+    document.getElementById('mercenary-camp').style.display = 'none';
     document.getElementById('battle-screen').style.display = 'flex';
     document.getElementById('current-dungeon-name').innerText = TOOTH_DATA.dungeons[idx];
     
-    // 플레이어 초기화
+    updateMercenary(); // 용병 외형 적용
     const p = document.getElementById('player');
     p.style.left = playerPos.x + '%';
     p.style.top = playerPos.y + '%';
@@ -47,18 +38,22 @@ function startDungeon(idx) {
 
 function spawnWave() {
     if (!dungeonActive) return;
-    document.getElementById('wave-info').innerText = isBossWave ? "BOSS WAVE" : `WAVE ${currentWave}/5`;
+    document.getElementById('wave-info').innerText = isBossWave ? "BOSS RAID" : `WAVE ${currentWave}/5`;
     const count = isBossWave ? 1 : 5 + currentWave;
     for (let i = 0; i < count; i++) {
-        setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 800);
+        setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 1000);
     }
 }
 
 function spawnEnemy(isBoss = false) {
     const area = document.getElementById('enemy-spawn-area');
+    if(!area) return;
+    
     const enContainer = document.createElement('div');
     enContainer.className = isBoss ? 'battle-enemy boss' : 'battle-enemy';
-    const hp = (100 * Math.pow(1.8, currentDungeonIdx)) * (isBoss ? 15 : 1);
+    
+    const baseHp = 100 * Math.pow(1.8, currentDungeonIdx);
+    const maxHp = baseHp * (isBoss ? 20 : 1);
     
     enContainer.innerHTML = `
         <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div>
@@ -69,27 +64,29 @@ function spawnEnemy(isBoss = false) {
     enemies.push({ 
         el: enContainer, 
         hpFill: enContainer.querySelector('.hp-bar-fill'),
-        x: 10 + Math.random() * 80, y: -10, isBoss, 
-        hp: hp, maxHp: hp
+        x: 10 + Math.random() * 80, y: -20, isBoss, 
+        hp: maxHp, maxHp: maxHp
     });
 }
 
 function updateBattle() {
     if (!dungeonActive) return;
     
-    // 공격
+    // 자동 발사
     for (let i = 0; i < 8; i++) {
         if (inventory[i] > 0 && weaponCD[i] <= 0 && enemies.length > 0) {
             shoot(i);
-            weaponCD[i] = Math.max(10, 30 - (inventory[i] * 0.5));
+            // 레벨이 높을수록 연사 속도 증가
+            weaponCD[i] = Math.max(5, 25 - (inventory[i] * 0.5));
         }
         if (weaponCD[i] > 0) weaponCD[i]--;
     }
 
-    // 미사일 이동 및 충돌
+    // 미사일 처리
     missiles.forEach((m, mIdx) => {
         m.y -= 2.5;
-        m.el.style.left = m.x + '%'; m.el.style.top = m.y + '%';
+        m.el.style.left = m.x + '%';
+        m.el.style.top = m.y + '%';
         
         enemies.forEach((en, eIdx) => {
             const d = Math.sqrt(Math.pow(m.x - en.x, 2) + Math.pow(m.y - en.y, 2));
@@ -102,7 +99,7 @@ function updateBattle() {
                 m.el.remove(); missiles.splice(mIdx, 1);
                 
                 if (en.hp <= 0) {
-                    gold += (currentDungeonIdx + 1) * 30;
+                    gold += (currentDungeonIdx + 1) * 50;
                     en.el.remove(); enemies.splice(eIdx, 1);
                     checkWaveClear();
                 }
@@ -113,8 +110,13 @@ function updateBattle() {
 
     // 적 이동
     enemies.forEach(en => {
-        en.y += en.isBoss ? 0.15 : 0.3;
+        en.y += en.isBoss ? 0.1 : 0.25;
         en.el.style.top = en.y + '%'; en.el.style.left = en.x + '%';
+        // 패배 조건 (바닥에 닿으면)
+        if (en.y > 90) {
+            // alert("몬스터가 마을을 침공했습니다!");
+            // exitDungeon(); // 임시 비활성 (게임 오버 스트레스 방지)
+        }
     });
 }
 
@@ -125,7 +127,14 @@ function shoot(slotIdx) {
     mEl.className = 'missile';
     mEl.innerText = '🦷';
     area.appendChild(mEl);
-    missiles.push({ el: mEl, x: playerPos.x, y: playerPos.y, dmg: getAtk(inventory[slotIdx]) });
+    
+    // 용병 공격력 배율 적용
+    const finalDmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul;
+    
+    missiles.push({ 
+        el: mEl, x: playerPos.x, y: playerPos.y, 
+        dmg: finalDmg
+    });
 }
 
 function showDmgText(x, y, dmg) {
@@ -142,9 +151,12 @@ function exitDungeon() {
     dungeonActive = false;
     enemies.forEach(en => en.el.remove()); missiles.forEach(m => m.el.remove());
     enemies = []; missiles = [];
+    
+    // UI 복구
     document.getElementById('battle-screen').style.display = 'none';
+    document.getElementById('top-nav').style.display = 'grid';
     document.getElementById('dungeon-list-container').style.display = 'block';
-    renderDungeonList();
+    document.getElementById('mercenary-camp').style.display = 'block';
 }
 
 function checkWaveClear() {
@@ -172,14 +184,22 @@ function renderWarWeapons() {
     }
 }
 
-// 플레이어 이동 (터치)
+// 플레이어 이동 (용병 속도 적용)
 window.addEventListener('touchmove', (e) => {
     if (!dungeonActive) return;
     const map = document.getElementById('battle-map');
     const rect = map.getBoundingClientRect();
     const touch = e.touches[0];
-    playerPos.x = Math.max(5, Math.min(95, ((touch.clientX - rect.left) / rect.width) * 100));
-    playerPos.y = Math.max(10, Math.min(90, ((touch.clientY - rect.top) / rect.height) * 100));
+    
+    // 목표 위치
+    const targetX = ((touch.clientX - rect.left) / rect.width) * 100;
+    const targetY = ((touch.clientY - rect.top) / rect.height) * 100;
+    
+    // 부드러운 이동 (Lerp) 대신 직접 이동 (반응성 우선)
+    playerPos.x = Math.max(5, Math.min(95, targetX));
+    playerPos.y = Math.max(10, Math.min(90, targetY));
+    
     const p = document.getElementById('player');
-    p.style.left = playerPos.x + '%'; p.style.top = playerPos.y + '%';
+    p.style.left = playerPos.x + '%';
+    p.style.top = playerPos.y + '%';
 }, {passive: false});
