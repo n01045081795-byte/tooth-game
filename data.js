@@ -1,4 +1,4 @@
-// Version: 1.9.0 - Data & Sound Manager
+// Version: 1.9.1 - Data & Web Audio Synthesizer
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
@@ -22,22 +22,66 @@ const TOOTH_DATA = {
     invExpansion: [5000, 50000, 500000, 5000000]
 };
 
-// 사운드 매니저
-const SOUNDS = {
-    mine: new Audio('sfx/mine.mp3'),
-    merge: new Audio('sfx/merge.mp3'),
-    great: new Audio('sfx/great.mp3'),
-    attack: new Audio('sfx/attack.mp3'),
-    hit: new Audio('sfx/hit.mp3')
-};
+// --- Web Audio API 사운드 생성기 ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(freq, type, duration, vol = 0.1) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
 
 function playSfx(name) {
-    if (SOUNDS[name]) {
-        SOUNDS[name].currentTime = 0;
-        SOUNDS[name].play().catch(() => {}); // 자동재생 차단 방지
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    switch (name) {
+        case 'mine': // 묵직한 타격음
+            playTone(150, 'square', 0.1, 0.1);
+            setTimeout(() => playTone(100, 'sawtooth', 0.1, 0.1), 50);
+            break;
+        case 'merge': // 띠링 (합성)
+            playTone(400, 'sine', 0.1, 0.1);
+            setTimeout(() => playTone(600, 'sine', 0.2, 0.1), 100);
+            break;
+        case 'great': // 뾰로롱 (대성공)
+            playTone(500, 'triangle', 0.1, 0.1);
+            setTimeout(() => playTone(700, 'triangle', 0.1, 0.1), 100);
+            setTimeout(() => playTone(1000, 'triangle', 0.3, 0.1), 200);
+            break;
+        case 'attack': // 슉 (발사)
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
+            
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+            break;
+        case 'hit': // 퍽 (타격)
+            playTone(100, 'sawtooth', 0.05, 0.05);
+            break;
     }
 }
 
+// 유틸리티 함수들
 function fNum(num) {
     if (num < 1000) return Math.floor(num);
     const units = ["", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
