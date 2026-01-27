@@ -1,28 +1,26 @@
 /* Version: 1.5.0 */
-html, body { width: 100%; height: 100%; overscroll-behavior-y: none; overflow: hidden; position: fixed; margin: 0; }
-body { background-color: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; touch-action: none; }
-#game-container { width: 100%; max-width: 450px; background: #16213e; height: 100vh; display: flex; flex-direction: column; }
+:root { --main-bg: #16213e; --point-red: #e94560; --gold: #f1c40f; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margin: 0; background: #000; }
+
+#game-container { width: 100%; max-width: 450px; height: 100vh; background: var(--main-bg); color: white; margin: auto; display: flex; flex-direction: column; }
 
 #top-nav { display: grid; grid-template-columns: 1fr 1fr; background: #0f3460; }
-#top-nav button { padding: 12px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; }
-#top-nav button.active { color: #fff; border-bottom: 3px solid #e94560; background: rgba(233, 69, 96, 0.1); }
+#top-nav button { padding: 15px; border: none; background: none; color: #7f8c8d; font-weight: bold; }
+#top-nav button.active { color: #fff; border-bottom: 3px solid var(--point-red); }
 
-.game-view { height: 200px; margin: 10px; border-radius: 10px; position: relative; overflow: hidden; background: #243b55; }
+.game-view { height: 220px; position: relative; padding: 10px; background: #1a1a2e; margin: 5px; border-radius: 10px; }
 
-/* 채굴 애니메이션 */
-#miner { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 60px; cursor: pointer; transition: transform 0.1s; z-index: 5; }
-#miner:active { transform: translate(-50%, -50%) rotate(-30deg) scale(1.2); }
-#mine-progress-container { position: absolute; bottom: 10px; left: 10%; width: 80%; height: 10px; background: #444; border-radius: 5px; }
-#mine-progress-fill { width: 0%; height: 100%; background: #00fbff; transition: width 0.1s; }
+/* 광산 애니메이션 */
+#mine-rock { height: 120px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+#giant-tooth { font-size: 80px; filter: drop-shadow(0 0 10px #fff); animation: pulse 2s infinite; }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-/* 전쟁터 무기 컨트롤러 */
-#weapon-controller { position: absolute; bottom: 5px; left: 0; width: 100%; display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; padding: 0 5px; box-sizing: border-box; }
-.war-slot { aspect-ratio: 1; background: rgba(0,0,0,0.5); border: 1px solid #e94560; border-radius: 2px; font-size: 10px; display: flex; align-items: center; justify-content: center; position: relative; }
-.war-cd { position: absolute; bottom: 0; width: 100%; background: rgba(233, 69, 96, 0.6); height: 0%; }
+.progress-container { width: 100%; height: 12px; background: #444; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+#mine-bar { width: 0%; height: 100%; background: #00fbff; transition: width 0.1s; }
 
-/* 치아 그래픽화 (레벨별 색상/그림자) */
-.tooth-icon { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 20px; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
+#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; background: #0f3460; flex-grow: 1; overflow-y: auto; }
+.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; position: relative; }
 
-/* 인벤토리 스타일 */
-#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; background: #0f3460; margin: 0 10px; border-radius: 5px; flex-grow: 1; }
-.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.6rem; }
+.btn-sm { padding: 8px; font-size: 11px; border: none; border-radius: 5px; cursor: pointer; }
+.gold-btn { background: var(--gold); color: #000; }
