@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v1.8.1</title>
-    <link rel="stylesheet" href="style.css?v=1.8.1">
+    <title>치아 연대기 v1.8.2</title>
+    <link rel="stylesheet" href="style.css?v=1.8.2">
 </head>
 <body>
     <div id="game-container">
@@ -14,7 +14,7 @@
         </nav>
         <header style="display:flex; justify-content:space-around; padding:10px; background:rgba(0,0,0,0.3); font-weight:bold; align-items:center;">
             <span>💰 <span id="gold-display">0</span></span>
-            <button id="mine-toggle-btn" onclick="toggleMining()" class="btn-sm">⏸️ 일시 정지</button>
+            <button id="mine-toggle-btn" onclick="toggleMining()" style="padding:8px; border:none; border-radius:5px; color:white; cursor:pointer; font-weight:bold;">⏸️ 일시 정지</button>
         </header>
         <main style="display:flex; flex-direction:column; flex-grow:1; overflow:hidden;">
             <div id="mine-view" style="display:flex; flex-direction:column; align-items:center; height:200px; padding:10px;">
@@ -23,20 +23,22 @@
                     <div id="miner-char">⛏️</div>
                 </div>
                 <div id="pickaxe-name" style="font-size:12px; margin-top:5px; color:#aaa;">허름한 나무 곡괭이</div>
-                <div class="progress-container"><div id="mine-bar"></div></div>
+                <div style="width:80%; height:12px; background:#444; border-radius:6px; margin:10px 0; overflow:hidden;">
+                    <div id="mine-bar" style="width:0%; height:100%; background:#00fbff;"></div>
+                </div>
             </div>
-            <div id="war-view" style="display:none; height:200px; padding:10px;">
-                <div id="dungeon-list" style="height:100%; overflow-y:auto;"></div>
-                <div id="battle-screen" style="display:none; height:100%; position:relative;">
-                    <div id="battle-map" style="width:100%; height:100%; background:#111; position:relative; overflow:hidden;">
-                        <div id="player" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:30px;">🤺</div>
-                        <div id="enemy-spawn-area"></div>
+            <div id="war-view" style="display:none; flex-grow:1; overflow:hidden;">
+                <div id="dungeon-list" style="padding:15px; overflow-y:auto; height:100%;"></div>
+                <div id="battle-screen">
+                    <div id="battle-map" ontouchmove="handleBattleTouch(event)">
+                        <div id="player">👨‍🌾</div> <div id="enemy-spawn-area"></div>
+                        <button onclick="exitDungeon()" style="position:absolute; top:10px; right:10px; z-index:20; background:#e74c3c; color:white; border:none; padding:10px; border-radius:5px;">후퇴</button>
                     </div>
-                    <button onclick="exitDungeon()" style="position:absolute; top:5px; right:5px;" class="btn-sm; background:#e74c3c;">후퇴</button>
+                    <div id="war-weapon-slots"></div>
                 </div>
             </div>
             <div id="action-bar" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; padding:10px;">
-                <button onclick="sortInventory()" class="btn-sm" style="background:var(--red);">🔄 자동 정렬</button>
+                <button onclick="sortInventory()" style="background:#e94560; padding:10px; border:none; border-radius:5px; color:white; font-weight:bold;">🔄 자동 정렬</button>
                 <button onclick="openShop()" class="gold-btn">💎 상점 방문</button>
             </div>
             <div id="inventory-container">
@@ -45,8 +47,8 @@
         </main>
     </div>
     <div id="shop-modal"><div id="shop-content"></div></div>
-    <script src="data.js?v=1.8.1"></script>
-    <script src="battle.js?v=1.8.1"></script>
-    <script src="script.js?v=1.8.1"></script>
+    <script src="data.js?v=1.8.2"></script>
+    <script src="battle.js?v=1.8.2"></script>
+    <script src="script.js?v=1.8.2"></script>
 </body>
 </html>
