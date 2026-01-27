@@ -1,6 +1,8 @@
-// Version: 1.5.0 - Data & Utils
+// Version: 1.5.1 - Data & Utilities
 const TOOTH_DATA = {
+    // 40단계 치아 아이콘 리스트
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
+    // 곡괭이 업그레이드 트리
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, power: 10, mineLv: 1, greatChance: 0.01 },
         { name: "무딘 구리 곡괭이", cost: 1000, power: 15, mineLv: 1, greatChance: 0.03 },
@@ -23,8 +25,16 @@ function fNum(num) {
     return shortNum.toFixed(2).replace(/\.00$/, "") + units[unitIdx];
 }
 
-// 레벨별 대미지 계산 (1.5배~1.8배 성장형)
+// 레벨별 대미지 계산 (레벨당 약 1.5~1.6배 성장)
 function getAtk(lv) {
     if (lv === 0) return 0;
-    return Math.floor(10 * Math.pow(1.65, lv - 1));
+    return Math.floor(10 * Math.pow(1.6, lv - 1)) + (lv * 5);
+}
+
+// 치아 아이콘 생성 함수
+function getToothIcon(lv) {
+    if (lv === 0) return "";
+    let iconIdx = (lv - 1) % TOOTH_DATA.icons.length;
+    let color = `hsl(${(lv * 35) % 360}, 75%, 75%)`;
+    return `<div class="tooth-icon" style="color:${color}">${TOOTH_DATA.icons[iconIdx]}</div>`;
 }
