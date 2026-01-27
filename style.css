@@ -1,64 +1,31 @@
-/* Version: 1.1.0 */
-html, body {
-    width: 100%; height: 100%;
-    overscroll-behavior-y: none; /* 크롬/삼성 인터넷 새로고침 원천 차단 */
-    overflow: hidden; position: fixed; margin: 0;
-}
+/* Version: 1.2.0 */
+html, body { width: 100%; height: 100%; overscroll-behavior-y: none; overflow: hidden; position: fixed; margin: 0; }
+body { background-color: #1a1a2e; color: white; font-family: sans-serif; display: flex; justify-content: center; user-select: none; touch-action: none; }
+#game-container { width: 100%; max-width: 450px; background: #16213e; height: 100vh; display: flex; flex-direction: column; }
 
-body { 
-    background-color: #1a1a2e; color: white; 
-    font-family: 'Pretendard', sans-serif; 
-    display: flex; justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none; touch-action: none;
+/* 배경 움직임 애니메이션 */
+#battle-field { height: 180px; margin: 10px; border-radius: 10px; position: relative; overflow: hidden; background-color: #243b55; }
+#background-layer { 
+    position: absolute; width: 200%; height: 100%; 
+    background: linear-gradient(90deg, transparent 49%, rgba(255,255,255,0.1) 50%);
+    background-size: 50px 100%; animation: scrollBg 2s linear infinite; 
 }
+@keyframes scrollBg { from { transform: translateX(0); } to { transform: translateX(-50px); } }
 
-#game-container { 
-    width: 100%; max-width: 450px; background: #16213e; 
-    height: 100vh; display: flex; flex-direction: column; 
-}
+#warrior { position: absolute; left: 30px; bottom: 40px; font-size: 45px; z-index: 10; transition: transform 0.2s; }
+.enemy { position: absolute; right: -50px; bottom: 40px; font-size: 40px; transition: right 2s linear; }
+.boss { font-size: 70px !important; filter: drop-shadow(0 0 10px red); }
+.missile { position: absolute; left: 70px; bottom: 55px; font-size: 20px; z-index: 5; transition: all 0.4s linear; }
 
-/* 전투 화면 스타일 */
-#battle-field { 
-    height: 160px; background: #0f3460; margin: 10px; 
-    border-radius: 10px; position: relative; overflow: hidden;
-    border-bottom: 3px solid #1a1a2e;
-}
-#warrior { position: absolute; left: 20px; bottom: 30px; font-size: 40px; z-index: 10; }
-#enemy { position: absolute; right: 20px; bottom: 30px; font-size: 40px; }
-.missile { 
-    position: absolute; left: 60px; bottom: 45px; 
-    font-size: 15px; transition: all 0.5s linear; z-index: 5;
-}
+#menu-bar { display: flex; gap: 5px; padding: 0 10px; margin-bottom: 5px; }
+.btn-mini { padding: 5px 10px; font-size: 11px; background: #0f3460; color: white; border: 1px solid #4e4e4e; border-radius: 4px; }
 
-#status-msg { 
-    position: absolute; top: 10px; width: 100%; text-align: center;
-    font-size: 0.9rem; color: #e94560; font-weight: bold;
-}
-
-#inventory-info { text-align: right; padding: 0 15px; font-size: 0.8rem; color: #888; }
-#inventory-grid { 
-    display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-    padding: 10px; background: #0f3460; margin: 5px 10px; 
-    border-radius: 5px; flex-grow: 1;
-}
-
-.grid-24 { grid-template-rows: repeat(3, 1fr); }
-.grid-32 { grid-template-rows: repeat(4, 1fr); }
-
-.slot { 
-    aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; 
-    border-radius: 4px; display: flex; align-items: center; 
-    justify-content: center; font-size: 0.7rem; font-weight: bold;
-}
-.slot.dragging { opacity: 0.3; }
-.slot.drag-over { background: #e94560; }
-
-.item-lv-5 { color: #ffd700; text-shadow: 0 0 5px #ffd700; }
-.item-lv-10 { color: #ff4d4d; text-shadow: 0 0 8px #ff4d4d; }
-.item-lv-20 { color: #00fbff; text-shadow: 0 0 15px #00fbff; }
+#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; background: #0f3460; margin: 0 10px; border-radius: 5px; flex-grow: 1; }
+.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
+.slot.dragging { opacity: 0.1; }
+.slot.drag-over { border: 2px solid #e94560; background: #16213e; }
 
 .button-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
-button { padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; }
-.btn-buy { background: #e94560; }
-.btn-expand { background: #4e4e4e; }
+button { cursor: pointer; border: none; font-weight: bold; }
+.btn-buy { background: #e94560; color: white; border-radius: 8px; }
+.btn-expand { background: #4e4e4e; color: white; border-radius: 8px; }
