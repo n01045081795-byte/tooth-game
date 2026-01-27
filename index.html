@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 키우기 - Tooth Idle v1.2.0</title>
-    <link rel="stylesheet" href="style.css?v=1.2.0">
+    <title>치아 키우기 - Tooth Idle v1.3.0</title>
+    <link rel="stylesheet" href="style.css?v=1.3.0">
 </head>
 <body>
     <div id="game-container">
         <header>
-            <h1>🦷 치아 키우기 v1.2</h1>
+            <h1>🦷 치아 키우기 v1.3</h1>
             <div class="stats-bar">
                 <div class="stat-item">💰 <span id="gold-display">0</span></div>
                 <div class="stat-item">🏰 Stage <span id="stage-display">1</span></div>
@@ -20,8 +20,13 @@
             <div id="battle-field">
                 <div id="background-layer"></div>
                 <div id="warrior">🤺</div>
-                <div id="enemy-container"></div>
-                <div id="status-msg">스테이지 진행 중...</div>
+                <div id="enemy-area">
+                    <div id="hp-bar-container" style="display:none;">
+                        <div id="hp-bar-fill"></div>
+                    </div>
+                    <div id="enemy-sprite"></div>
+                </div>
+                <div id="status-msg">전투 준비 완료</div>
             </div>
 
             <div id="menu-bar">
@@ -39,6 +44,6 @@
             </div>
         </footer>
     </div>
-    <script src="script.js?v=1.2.0"></script>
+    <script src="script.js?v=1.3.0"></script>
 </body>
 </html>
