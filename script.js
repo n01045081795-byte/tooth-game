@@ -1,24 +1,22 @@
-// Version: 1.3.0
+// Version: 1.4.0
 let gold = 1000;
 let maxSlots = 24;
 let inventory = new Array(32).fill(0);
 let stage = 1;
 let dragStartIndex = null;
-let sortMode = 'desc';
 let hasAutoCombine = false;
 let currentEnemyHp = 100;
 let maxEnemyHp = 100;
-let missileIndex = 0; // 인벤토리 순차 발사를 위한 인덱스
 
-const enemies = ['👾', '👻', '💀', '🧛', '👹', '👺'];
-const bosses = ['🐉', '🧟', '🌋', '👑'];
+// 각 슬롯의 쿨타임 상태 (상단 8칸용)
+let cooldowns = new Array(8).fill(0); 
 
 function saveGame() {
-    localStorage.setItem('toothSaveV130', JSON.stringify({ gold, maxSlots, inventory, stage, hasAutoCombine }));
+    localStorage.setItem('toothSaveV140', JSON.stringify({ gold, maxSlots, inventory, stage, hasAutoCombine }));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV130');
+    const saved = localStorage.getItem('toothSaveV140');
     if (saved) {
         const d = JSON.parse(saved);
         gold = d.gold; maxSlots = d.maxSlots; inventory = d.inventory;
@@ -26,89 +24,79 @@ function loadGame() {
     }
 }
 
-// --- 전투 시스템 ---
-function spawnEnemy() {
-    const isBoss = stage % 10 === 0;
-    maxEnemyHp = isBoss ? stage * 200 : stage * 50;
-    currentEnemyHp = maxEnemyHp;
-    
-    const sprite = document.getElementById('enemy-sprite');
-    sprite.innerText = isBoss ? bosses[Math.floor(Math.random()*bosses.length)] : enemies[Math.floor(Math.random()*enemies.length)];
-    if(isBoss) sprite.style.fontSize = "70px"; else sprite.style.fontSize = "45px";
-
-    document.getElementById('hp-bar-container').style.display = 'block';
-    updateHpBar();
+// --- 공격 및 밸런스 ---
+function getDamage(lv) {
+    if (lv === 0) return 0;
+    // 레벨업 효율 체감: 1단계 20 -> 2단계 50 -> 3단계 120... (2.2배수 이상)
+    return Math.floor(20 * Math.pow(2.5, lv - 1));
 }
 
-function updateHpBar() {
-    const percent = (currentEnemyHp / maxEnemyHp) * 100;
-    document.getElementById('hp-bar-fill').style.width = percent + '%';
+function getCooldown(lv) {
+    // 레벨이 높을수록 조금 더 빨리 쏨 (2초 ~ 0.5초 사이)
+    return Math.max(500, 2000 - (lv * 100));
 }
 
-// 인벤토리 순서대로 미사일 발사
-function shootNextMissile() {
-    // 인벤토리에서 치아가 있는 칸들만 필터링
-    const slotsWithTeeth = [];
-    for(let i=0; i<maxSlots; i++) {
-        if(inventory[i] > 0) slotsWithTeeth.push({lv: inventory[i], idx: i});
+// 상단 8칸 개별 공격 루프
+function battleLoop() {
+    for (let i = 0; i < 8; i++) {
+        if (inventory[i] > 0 && cooldowns[i] <= 0) {
+            shootMissile(i, inventory[i]);
+            cooldowns[i] = getCooldown(inventory[i]);
+            updateCooldownUI(i);
+        }
+        if (cooldowns[i] > 0) {
+            cooldowns[i] -= 100;
+            updateCooldownUI(i);
+        }
     }
-
-    if(slotsWithTeeth.length === 0) return;
-
-    // 순차적 인덱스 관리
-    if(missileIndex >= slotsWithTeeth.length) missileIndex = 0;
-    const currentTooth = slotsWithTeeth[missileIndex];
-    missileIndex++;
-
-    createMissile(currentTooth.lv);
 }
 
-function createMissile(lv) {
+function updateCooldownUI(idx) {
+    const slot = document.querySelector(`.slot[data-index="${idx}"]`);
+    if (!slot) return;
+    const overlay = slot.querySelector('.cooldown-overlay');
+    if (!overlay) return;
+    const ratio = (cooldowns[idx] / getCooldown(inventory[idx])) * 100;
+    overlay.style.height = Math.max(0, ratio) + '%';
+}
+
+function shootMissile(slotIdx, lv) {
     const missile = document.createElement('div');
     missile.className = 'missile';
     missile.innerText = '🦷';
     document.getElementById('battle-field').appendChild(missile);
 
-    // 데미지 계산 및 발사
-    const dmg = Math.pow(2, lv - 1) + (stage * 2);
-
     setTimeout(() => {
-        missile.style.left = '310px'; // 적 위치 근처
+        missile.style.left = '310px';
         setTimeout(() => {
-            applyDamage(dmg);
+            applyDamage(getDamage(lv));
             missile.remove();
-        }, 400);
-    }, 50);
+        }, 300);
+    }, 20);
 }
 
 function applyDamage(dmg) {
     currentEnemyHp -= dmg;
-    if(currentEnemyHp < 0) currentEnemyHp = 0;
+    if (currentEnemyHp < 0) currentEnemyHp = 0;
     updateHpBar();
 
-    // 데미지 텍스트 띄우기
     const dmgText = document.createElement('div');
     dmgText.className = 'dmg-text';
-    dmgText.innerText = Math.floor(dmg);
+    dmgText.innerText = dmg.toLocaleString();
     dmgText.style.left = (310 + Math.random()*20) + 'px';
     dmgText.style.top = '60px';
     document.getElementById('battle-field').appendChild(dmgText);
     setTimeout(() => dmgText.remove(), 600);
 
-    // 적 피격 흔들림
-    const sprite = document.getElementById('enemy-sprite');
-    sprite.style.transform = 'translateX(5px)';
-    setTimeout(() => sprite.style.transform = 'translateX(0)', 50);
-
-    if(currentEnemyHp <= 0) {
-        gold += maxEnemyHp * 0.5;
+    if (currentEnemyHp <= 0) {
+        gold += maxEnemyHp * 0.4;
         stage++;
         updateStats();
         spawnEnemy();
     }
 }
 
-// --- 인벤토리 로직 ---
+// --- 인벤토리 자유 이동 (스와프) ---
 function setupDragEvents(slot, index) {
     slot.addEventListener('touchstart', (e) => {
         if (inventory[index] === 0) return;
@@ -132,11 +120,13 @@ function setupDragEvents(slot, index) {
         if (target && target.dataset.index !== undefined) {
             const to = parseInt(target.dataset.index);
             if (to !== dragStartIndex) {
-                if (inventory[to] === inventory[dragStartIndex]) {
+                // 핵심: 레벨이 다르면 위치 교체(Swap), 같으면 합성
+                if (inventory[to] === inventory[dragStartIndex] && inventory[to] > 0) {
                     tryCombine(dragStartIndex, to);
-                } else if (inventory[to] === 0) {
+                } else {
+                    const temp = inventory[to];
                     inventory[to] = inventory[dragStartIndex];
-                    inventory[dragStartIndex] = 0;
+                    inventory[dragStartIndex] = temp;
                 }
             }
         }
@@ -152,37 +142,42 @@ function tryCombine(from, to) {
     inventory[from] = 0;
     if (Math.random() < 0.05 && lv <= 18) {
         inventory[to] = lv + 2;
-        document.getElementById('status-msg').innerText = "✨ 대성공!";
     } else {
         inventory[to] = lv + 1;
-        document.getElementById('status-msg').innerText = `Lv.${lv+1} 합성!`;
     }
 }
 
-function sortInventory() {
-    let items = inventory.filter(v => v > 0);
-    if (sortMode === 'desc') { items.sort((a, b) => b - a); sortMode = 'asc'; }
-    else { items.sort((a, b) => a - b); sortMode = 'desc'; }
-    inventory.fill(0);
-    items.forEach((v, i) => inventory[i] = v);
-    renderInventory();
+// --- 초기화 및 렌더링 ---
+function spawnEnemy() {
+    const isBoss = stage % 10 === 0;
+    maxEnemyHp = isBoss ? stage * 300 : stage * 80;
+    currentEnemyHp = maxEnemyHp;
+    document.getElementById('enemy-sprite').innerText = isBoss ? '🐉' : '👾';
+    document.getElementById('hp-bar-container').style.display = 'block';
+    updateHpBar();
 }
 
-function buyAutoCombine() {
-    if (hasAutoCombine) return;
-    if (gold >= 10000) { gold -= 10000; hasAutoCombine = true; document.getElementById('auto-combine-btn').innerText = "🤖 자동합성 ON"; updateStats(); }
+function updateHpBar() {
+    const percent = (currentEnemyHp / maxEnemyHp) * 100;
+    document.getElementById('hp-bar-fill').style.width = percent + '%';
 }
 
-function runAutoCombine() {
-    if (!hasAutoCombine) return;
+function renderInventory() {
+    const grid = document.getElementById('inventory-grid');
+    grid.innerHTML = '';
     for (let i = 0; i < maxSlots; i++) {
-        if (inventory[i] === 0) continue;
-        for (let j = i + 1; j < maxSlots; j++) {
-            if (inventory[i] === inventory[j] && inventory[i] < 20) {
-                inventory[j] = 0; inventory[i] += 1;
-                renderInventory(); return;
-            }
-        }
+        const slot = document.createElement('div');
+        slot.className = `slot item-lv-${inventory[i]}`;
+        if (i < 8) slot.classList.add('attack-slot'); // 상단 8칸 표시
+        slot.dataset.index = i;
+        slot.innerText = inventory[i] > 0 ? `Lv.${inventory[i]}` : '';
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'cooldown-overlay';
+        slot.appendChild(overlay);
+        
+        setupDragEvents(slot, i);
+        grid.appendChild(slot);
     }
 }
 
@@ -195,27 +190,6 @@ function buyTooth() {
     }
 }
 
-function expandInventory() {
-    if (gold >= 5000 && maxSlots < 32) {
-        gold -= 5000; maxSlots = 32;
-        document.getElementById('expand-btn').style.display = 'none';
-        renderInventory(); updateStats();
-    }
-}
-
-function renderInventory() {
-    const grid = document.getElementById('inventory-grid');
-    grid.innerHTML = '';
-    for (let i = 0; i < maxSlots; i++) {
-        const slot = document.createElement('div');
-        slot.className = `slot item-lv-${inventory[i]}`;
-        slot.dataset.index = i;
-        slot.innerText = inventory[i] > 0 ? `Lv.${inventory[i]}` : '';
-        setupDragEvents(slot, i);
-        grid.appendChild(slot);
-    }
-}
-
 function updateStats() {
     document.getElementById('gold-display').innerText = Math.floor(gold).toLocaleString();
     document.getElementById('stage-display').innerText = stage;
@@ -224,11 +198,9 @@ function updateStats() {
 
 function init() {
     loadGame();
-    if(hasAutoCombine) document.getElementById('auto-combine-btn').innerText = "🤖 자동합성 ON";
     renderInventory();
     updateStats();
     spawnEnemy();
-    setInterval(shootNextMissile, 800); // 0.8초마다 순차 발사
-    setInterval(runAutoCombine, 2000);
+    setInterval(battleLoop, 100); // 0.1초마다 쿨타임 및 공격 체크
 }
 init();
