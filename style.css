@@ -1,5 +1,5 @@
-/* Version: 1.6.0 */
-:root { --bg: #16213e; --red: #e94560; --blue: #0f3460; }
+/* Version: 1.7.0 */
+:root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
 #game-container { width: 100%; max-width: 450px; height: 100vh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; }
@@ -8,30 +8,40 @@ html, body { width: 100%; height: 100%; overflow: hidden; position: fixed; margi
 #top-nav button { padding: 15px; border: none; background: none; color: #888; font-weight: bold; }
 #top-nav button.active { color: #fff; border-bottom: 3px solid var(--red); }
 
-.game-view { height: 250px; margin: 10px; border-radius: 10px; background: #1a1a2e; position: relative; overflow-y: auto; }
+.game-view { height: 260px; margin: 10px; border-radius: 10px; background: #1a1a2e; overflow: hidden; }
 
-/* 던전 리스트 */
-#dungeon-list { padding: 10px; }
-.dungeon-btn { width: 100%; padding: 12px; margin-bottom: 5px; background: #243b55; border: 1px solid #4e4e4e; color: #fff; text-align: left; border-radius: 5px; }
-.dungeon-btn:disabled { opacity: 0.5; background: #111; }
-.dungeon-btn span { color: var(--red); font-weight: bold; margin-right: 10px; }
+/* 광산 채굴 애니메이션 */
+#mine-view { display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+#mine-rock-area { position: relative; width: 150px; height: 150px; cursor: pointer; }
+#giant-tooth { font-size: 80px; position: absolute; left: 35px; top: 30px; }
+#miner-char { font-size: 50px; position: absolute; right: -20px; top: 10px; transition: transform 0.1s; transform-origin: bottom center; }
+#miner-char.swing { animation: hammer 0.2s ease-in-out; }
+@keyframes hammer { 
+    0% { transform: rotate(0deg); } 
+    50% { transform: rotate(-45deg); } 
+    100% { transform: rotate(0deg); } 
+}
 
-/* 전투 화면 */
+/* 인벤토리 (스크롤 가능) */
+#inventory-container { flex-grow: 1; overflow-y: scroll; background: var(--blue); margin: 0 10px 10px; border-radius: 8px; border: 2px solid #000; }
+#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; }
+.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; }
+.attack-slot { border: 2px solid var(--red); box-shadow: inset 0 0 5px var(--red); }
+.lv-text { position: absolute; bottom: 1px; font-size: 8px; color: #aaa; pointer-events: none; }
+
+/* 전투 요소 */
 #battle-map { width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #222, #000); overflow: hidden; }
 #player { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 30px; z-index: 10; }
 .battle-enemy { position: absolute; font-size: 25px; transition: transform 0.1s; }
-.battle-enemy.boss { font-size: 50px; filter: drop-shadow(0 0 10px red); }
+.battle-enemy.boss { font-size: 55px; filter: drop-shadow(0 0 15px red); }
 .missile { position: absolute; font-size: 15px; z-index: 5; }
 .dmg-popup { position: absolute; color: yellow; font-weight: bold; font-size: 12px; animation: fadeUp 0.5s forwards; pointer-events: none; }
-@keyframes fadeUp { to { transform: translateY(-20px); opacity: 0; } }
+@keyframes fadeUp { to { transform: translateY(-30px); opacity: 0; } }
 
-/* 인벤토리 */
-#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 10px; background: var(--blue); flex-grow: 1; }
-.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; }
-.attack-slot { border: 2px solid var(--red); box-shadow: inset 0 0 5px var(--red); }
-.lv-text { position: absolute; bottom: 1px; font-size: 8px; color: #aaa; }
-.tooth-icon { font-size: 22px; }
-
-.btn-sm { padding: 10px; border: none; border-radius: 5px; background: #4e4e4e; color: white; font-size: 11px; }
-.gold-btn { background: #f1c40f; color: #000; }
-#action-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; padding: 10px; }
+/* 버튼 및 UI */
+.progress-container { width: 80%; height: 12px; background: #444; border-radius: 6px; margin: 10px 0; overflow: hidden; }
+#mine-bar { width: 0%; height: 100%; background: #00fbff; }
+#action-bar { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; padding: 0 10px 10px; }
+.btn-sm { padding: 10px; border: none; border-radius: 5px; background: #4e4e4e; color: white; font-size: 11px; font-weight: bold; }
+.gold-btn { background: var(--gold); color: #000; }
+.dungeon-btn { width: 100%; padding: 12px; margin-bottom: 5px; background: #243b55; color: #fff; border: 1px solid #444; border-radius: 5px; text-align: left; }
