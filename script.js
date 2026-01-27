@@ -1,4 +1,4 @@
-// Version: 2.0.0 - Main Logic
+// Version: 2.1.0 - Main Logic
 let gold = 1000;
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -9,19 +9,23 @@ let mineProgress = 0;
 let isMiningPaused = false;
 let currentView = 'mine';
 let dragStartIdx = null;
-let mercenaryIdx = 0; // 현재 보유/장착 중인 용병 ID
-let ownedMercenaries = [0]; // 보유한 용병 목록
+let mercenaryIdx = 0;
+let ownedMercenaries = [0];
+
+// 드래그 프록시 요소
+const dragProxy = document.getElementById('drag-proxy');
 
 function saveGame() {
-    localStorage.setItem('toothSaveV200', JSON.stringify({ 
+    const data = { 
         gold, maxSlots, inventory, unlockedDungeon, pickaxeIdx, autoMineLevel,
         mercenaryIdx, ownedMercenaries,
         lastTime: Date.now(), isMiningPaused 
-    }));
+    };
+    localStorage.setItem('toothSaveV210', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV200');
+    const saved = localStorage.getItem('toothSaveV210');
     if (saved) {
         const d = JSON.parse(saved);
         gold = d.gold || 1000; maxSlots = d.maxSlots || 32; inventory = d.inventory || new Array(64).fill(0);
@@ -44,14 +48,48 @@ function loadGame() {
     }
 }
 
+// 쿠폰 및 세이브 관리
+function checkCoupon() {
+    const code = document.getElementById('coupon-input').value.trim();
+    if (code === "100b" || code === "RICH100B") {
+        gold += 100000000000; // 100b
+        alert("치트키 적용: 100b 골드 획득!");
+        updateUI();
+    } else {
+        alert("유효하지 않은 쿠폰입니다.");
+    }
+}
+
+function exportSave() {
+    saveGame();
+    const data = localStorage.getItem('toothSaveV210');
+    const encoded = btoa(unescape(encodeURIComponent(data))); // 간단 인코딩
+    prompt("아래 코드를 복사해서 저장하세요:", encoded);
+}
+
+function importSave() {
+    const str = prompt("저장 코드를 붙여넣으세요:");
+    if (str) {
+        try {
+            const decoded = decodeURIComponent(escape(atob(str)));
+            localStorage.setItem('toothSaveV210', decoded);
+            location.reload();
+        } catch (e) {
+            alert("잘못된 저장 코드입니다.");
+        }
+    }
+}
+
+// 화면 전환 및 렌더링
 function switchView(view) {
     currentView = view;
     document.getElementById('mine-view').style.display = view === 'mine' ? 'flex' : 'none';
-    document.getElementById('war-view').style.display = view === 'war' ? 'block' : 'none';
+    document.getElementById('war-view').style.display = view === 'war' ? 'flex' : 'none';
     document.getElementById('tab-mine').classList.toggle('active', view === 'mine');
     document.getElementById('tab-war').classList.toggle('active', view === 'war');
     
     document.getElementById('inventory-section').style.display = view === 'mine' ? 'flex' : 'none';
+    document.getElementById('cheat-section').style.display = view === 'mine' ? 'flex' : 'none';
 
     if (view === 'war') {
         renderDungeonList();
@@ -61,11 +99,136 @@ function switchView(view) {
     }
 }
 
-// 용병 모집소 UI
+function renderInventory() {
+    const grid = document.getElementById('inventory-grid');
+    grid.innerHTML = '';
+    for (let i = 0; i < 64; i++) {
+        const slot = document.createElement('div');
+        slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= maxSlots ? 'locked-slot' : ''}`;
+        slot.dataset.index = i;
+        slot.id = `slot-${i}`;
+        
+        if (i < maxSlots && inventory[i] > 0) {
+            slot.innerHTML = getToothIcon(inventory[i]) + `<span class="lv-text">Lv.${inventory[i]}</span>`;
+        } else if (i >= maxSlots) slot.innerHTML = "🔒";
+        
+        if (i < maxSlots) {
+            // 드래그 시작 (터치/마우스 통합)
+            slot.onpointerdown = (e) => {
+                if (inventory[i] > 0) {
+                    e.preventDefault(); // 스크롤 방지 (필요시 조정)
+                    dragStartIdx = i;
+                    slot.classList.add('picked');
+                    
+                    // 프록시 설정
+                    dragProxy.innerHTML = getToothIcon(inventory[i]);
+                    dragProxy.style.display = 'block';
+                    moveProxy(e);
+                    
+                    document.addEventListener('pointermove', onPointerMove);
+                    document.addEventListener('pointerup', onPointerUp);
+                }
+            };
+            
+            // 더블클릭 일괄 합성
+            slot.ondblclick = () => { if(inventory[i] > 0) massMerge(inventory[i]); };
+        }
+        grid.appendChild(slot);
+    }
+}
+
+function moveProxy(e) {
+    dragProxy.style.left = (e.clientX - 20) + 'px';
+    dragProxy.style.top = (e.clientY - 20) + 'px';
+    
+    // 타겟 슬롯 강조
+    document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target'));
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    if(target && target.closest('.slot')) {
+        const tSlot = target.closest('.slot');
+        if(parseInt(tSlot.dataset.index) < maxSlots) tSlot.classList.add('drag-target');
+    }
+}
+
+function onPointerMove(e) {
+    moveProxy(e);
+}
+
+function onPointerUp(e) {
+    document.removeEventListener('pointermove', onPointerMove);
+    document.removeEventListener('pointerup', onPointerUp);
+    dragProxy.style.display = 'none';
+    
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    if (target && target.closest('.slot')) {
+        const toIdx = parseInt(target.closest('.slot').dataset.index);
+        if (toIdx < maxSlots && dragStartIdx !== null) {
+            handleMoveOrMerge(dragStartIdx, toIdx);
+        }
+    }
+    
+    document.querySelectorAll('.slot').forEach(s => {
+        s.classList.remove('picked', 'drag-target');
+    });
+    dragStartIdx = null;
+}
+
+function handleMoveOrMerge(from, to) {
+    if (from === to) return;
+    if (inventory[from] === inventory[to] && inventory[from] > 0) {
+        const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
+        const isGreat = Math.random() < pick.greatChance;
+        const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1;
+        inventory[to] = nextLv;
+        inventory[from] = 0;
+        if(isGreat) triggerGreatSuccess(to); else playSfx('merge');
+    } else {
+        [inventory[from], inventory[to]] = [inventory[to], inventory[from]];
+    }
+    renderInventory(); saveGame();
+}
+
+function massMerge(lv) {
+    let indices = [];
+    inventory.forEach((val, idx) => { if(val === lv && idx < maxSlots) indices.push(idx); });
+    if(indices.length < 2) return;
+    playSfx('merge');
+    
+    const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
+    
+    for(let i=0; i < indices.length - 1; i += 2) {
+        const isGreat = Math.random() < pick.greatChance; // 개별 확률 적용
+        const nextLv = isGreat ? lv + 2 : lv + 1;
+        
+        inventory[indices[i+1]] = nextLv;
+        inventory[indices[i]] = 0;
+        
+        if(isGreat) triggerGreatSuccess(indices[i+1]);
+    }
+    renderInventory();
+}
+
+function triggerGreatSuccess(idx) {
+    playSfx('great');
+    const slot = document.getElementById(`slot-${idx}`);
+    if (slot) {
+        slot.classList.add('shiny-effect');
+        setTimeout(() => slot.classList.remove('shiny-effect'), 1000);
+    }
+}
+
+// 용병 관련 (순차 해금)
 function renderMercenaryCamp() {
     const camp = document.getElementById('mercenary-list');
     camp.innerHTML = '';
+    
+    // 소유한 가장 높은 등급의 용병 ID 확인
+    const maxOwned = Math.max(...ownedMercenaries);
+    
     TOOTH_DATA.mercenaries.forEach(merc => {
+        // 이전 단계 용병이 있어야 보임 (단, 이미 구매한건 보임)
+        if (merc.id > maxOwned + 1) return;
+
         const div = document.createElement('div');
         div.className = 'merc-card';
         const isOwned = ownedMercenaries.includes(merc.id);
@@ -104,6 +267,36 @@ function equipMerc(id) {
     saveGame();
 }
 
+// 상점 및 기타 유틸
+function openShop() { document.getElementById('shop-modal').style.display = 'flex'; renderShopItems(); }
+function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
+
+function renderShopItems() {
+    const content = document.getElementById('shop-content');
+    let expansionCount = (maxSlots - 32) / 8;
+    content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3>
+                         <p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p>
+                         <div id="shop-items-container"></div>`;
+    const container = document.getElementById('shop-items-container');
+    const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
+    if (pickNext) container.innerHTML += `<div class="shop-item"><p>⚒️ ${pickNext.name}</p><button onclick="buyItem('pick', ${pickNext.cost})" class="btn-gold">💰 ${fNum(pickNext.cost)}</button></div>`;
+    const autoCost = autoMineLevel * 2000;
+    container.innerHTML += `<div class="shop-item"><p>🤖 자동채굴 Lv.${autoMineLevel}</p><button onclick="buyItem('auto', ${autoCost})" class="btn-gold">💰 ${fNum(autoCost)}</button></div>`;
+    if (expansionCount < 4) {
+        const expCost = TOOTH_DATA.invExpansion[expansionCount];
+        container.innerHTML += `<div class="shop-item"><p>🎒 인벤토리 확장</p><button onclick="buyItem('exp', ${expCost})" class="btn-gold">💰 ${fNum(expCost)}</button></div>`;
+    }
+    content.innerHTML += `<button onclick="closeShop()" class="btn-red" style="width:100%; margin-top:20px;">닫기</button>`;
+}
+
+function buyItem(type, cost) {
+    if (gold >= cost) {
+        gold -= cost;
+        if (type === 'pick') pickaxeIdx++; else if (type === 'auto') autoMineLevel++; else if (type === 'exp') maxSlots += 8;
+        renderShopItems(); renderInventory(); updateUI();
+    } else { alert("골드가 부족합니다!"); }
+}
+
 function renderDungeonList() {
     const list = document.getElementById('dungeon-list');
     list.innerHTML = '';
@@ -121,127 +314,10 @@ function renderDungeonList() {
     });
 }
 
-// 나머지 인벤토리 및 합성 로직은 그대로 유지 (더블클릭 복구)
-function renderInventory() {
-    const grid = document.getElementById('inventory-grid');
-    grid.innerHTML = '';
-    for (let i = 0; i < 64; i++) {
-        const slot = document.createElement('div');
-        slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= maxSlots ? 'locked-slot' : ''}`;
-        slot.dataset.index = i;
-        slot.id = `slot-${i}`;
-        
-        if (i < maxSlots && inventory[i] > 0) {
-            slot.innerHTML = getToothIcon(inventory[i]) + `<span class="lv-text">Lv.${inventory[i]}</span>`;
-        } else if (i >= maxSlots) slot.innerHTML = "🔒";
-        
-        if (i < maxSlots) {
-            slot.ontouchstart = (e) => {
-                if (inventory[i] > 0) {
-                    dragStartIdx = i;
-                    slot.classList.add('picked');
-                }
-            };
-            slot.ontouchend = (e) => {
-                if (dragStartIdx === null) return;
-                slot.classList.remove('picked');
-                const touch = e.changedTouches[0];
-                const target = document.elementFromPoint(touch.clientX, touch.clientY);
-                if (target && target.closest('.slot')) {
-                    const toIdx = parseInt(target.closest('.slot').dataset.index);
-                    if (toIdx < maxSlots) handleMoveOrMerge(dragStartIdx, toIdx);
-                }
-                dragStartIdx = null;
-            };
-            // PC용 더블클릭 이벤트
-            slot.ondblclick = () => { if(inventory[i] > 0) massMerge(inventory[i]); };
-        }
-        grid.appendChild(slot);
-    }
-}
-
-function handleMoveOrMerge(from, to) {
-    if (from === to) return;
-    if (inventory[from] === inventory[to] && inventory[from] > 0) {
-        const isGreat = Math.random() < 0.05;
-        const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1;
-        inventory[to] = nextLv;
-        inventory[from] = 0;
-        if(isGreat) triggerGreatSuccess(to); else playSfx('merge');
-    } else {
-        [inventory[from], inventory[to]] = [inventory[to], inventory[from]];
-    }
-    renderInventory(); saveGame();
-}
-
-function massMerge(lv) {
-    let indices = [];
-    inventory.forEach((val, idx) => { if(val === lv && idx < maxSlots) indices.push(idx); });
-    if(indices.length < 2) return;
-    playSfx('merge');
-    for(let i=0; i < indices.length - 1; i += 2) {
-        inventory[indices[i+1]] = Math.random() < 0.05 ? lv + 2 : lv + 1;
-        inventory[indices[i]] = 0;
-    }
-    renderInventory();
-}
-
-function triggerGreatSuccess(idx) {
-    playSfx('great');
-    const slot = document.getElementById(`slot-${idx}`);
-    if (slot) {
-        slot.classList.add('shiny-effect');
-        setTimeout(() => slot.classList.remove('shiny-effect'), 1000);
-    }
-}
-
-// 상점 (보유 골드 표시)
-function openShop() {
-    document.getElementById('shop-modal').style.display = 'flex';
-    renderShopItems();
-}
-function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
-
-function renderShopItems() {
-    const content = document.getElementById('shop-content');
-    content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3>
-                         <p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p>
-                         <div id="shop-items-container"></div>`;
-    const container = document.getElementById('shop-items-container');
-    
-    // 아이템 렌더링 (곡괭이, 자동채굴, 인벤토리)
-    const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
-    if (pickNext) container.innerHTML += `<div class="shop-item"><p>⚒️ ${pickNext.name}</p><button onclick="buyItem('pick', ${pickNext.cost})" class="btn-gold">💰 ${fNum(pickNext.cost)}</button></div>`;
-    
-    const autoCost = autoMineLevel * 2000;
-    container.innerHTML += `<div class="shop-item"><p>🤖 자동채굴 Lv.${autoMineLevel}</p><button onclick="buyItem('auto', ${autoCost})" class="btn-gold">💰 ${fNum(autoCost)}</button></div>`;
-    
-    let expCount = (maxSlots - 32) / 8;
-    if (expCount < 4) {
-        const expCost = TOOTH_DATA.invExpansion[expCount];
-        container.innerHTML += `<div class="shop-item"><p>🎒 인벤토리 확장</p><button onclick="buyItem('exp', ${expCost})" class="btn-gold">💰 ${fNum(expCost)}</button></div>`;
-    }
-    
-    content.innerHTML += `<button onclick="closeShop()" class="btn-red" style="width:100%; margin-top:20px;">닫기</button>`;
-}
-
-function buyItem(type, cost) {
-    if (gold >= cost) {
-        gold -= cost;
-        if (type === 'pick') pickaxeIdx++;
-        else if (type === 'auto') autoMineLevel++;
-        else if (type === 'exp') maxSlots += 8;
-        renderShopItems(); renderInventory(); updateUI();
-    } else { alert("골드가 부족합니다!"); }
-}
-
-// 채굴 로직
 function manualMine() {
     const miner = document.getElementById('miner-char');
-    miner.classList.remove('swing');
-    void miner.offsetWidth; miner.classList.add('swing');
-    playSfx('mine');
-    processMining(10);
+    miner.classList.remove('swing'); void miner.offsetWidth; miner.classList.add('swing');
+    playSfx('mine'); processMining(10);
 }
 
 function processMining(amt) {
