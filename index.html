@@ -3,53 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v1.7.0</title>
-    <link rel="stylesheet" href="style.css?v=1.7.0">
+    <title>치아 연대기 v1.8.0</title>
+    <link rel="stylesheet" href="style.css?v=1.8.0">
 </head>
 <body>
     <div id="game-container">
-        <nav id="top-nav">
-            <button onclick="switchView('mine')" id="tab-mine" class="active">⛏️ 광산 채굴</button>
-            <button onclick="switchView('war')" id="tab-war">⚔️ 던전 원정</button>
+        <nav id="top-nav" style="display:grid; grid-template-columns: 1fr 1fr; background:#0f3460;">
+            <button onclick="switchView('mine')" id="tab-mine" class="active" style="padding:15px; border:none; background:none; color:white; font-weight:bold;">⛏️ 채굴/합성</button>
+            <button onclick="switchView('war')" id="tab-war" style="padding:15px; border:none; background:none; color:#888; font-weight:bold;">⚔️ 던전원정</button>
         </nav>
-        <header>
-            <div class="stats-bar" style="display:flex; justify-content:space-around; padding:10px; font-weight:bold; background:rgba(0,0,0,0.3);">
-                <span>💰 <span id="gold-display">0</span></span>
-                <span id="dungeon-title-display">치과 광산</span>
-            </div>
+        <header style="display:flex; justify-content:space-around; padding:10px; background:rgba(0,0,0,0.3); font-weight:bold;">
+            <span>💰 <span id="gold-display">0</span></span>
+            <button id="mine-toggle-btn" onclick="toggleMining()" class="btn-sm">⏸️ 일시 정지</button>
         </header>
         <main style="display:flex; flex-direction:column; flex-grow:1; overflow:hidden;">
-            <div id="mine-view" class="game-view">
-                <div id="mine-rock-area" onclick="manualMine()">
-                    <div id="giant-tooth">🦷</div>
+            <div id="mine-view" style="display:flex; flex-direction:column; align-items:center; height:200px; padding:10px;">
+                <div id="mine-rock-area" onclick="manualMine()" style="position:relative; width:120px; height:120px;">
+                    <div id="giant-tooth" style="font-size:60px; position:absolute; left:30px; top:20px;">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
-                <div id="pickaxe-name" style="font-size:12px; margin-top:5px; color:#aaa;">허름한 나무 곡괭이</div>
                 <div class="progress-container"><div id="mine-bar"></div></div>
             </div>
-            <div id="war-view" class="game-view" style="display:none; overflow-y:auto; padding:10px;">
+            <div id="war-view" style="display:none; height:200px; padding:10px; overflow-y:auto;">
                 <div id="dungeon-list"></div>
                 <div id="battle-screen" style="display:none; height:100%; position:relative;">
-                    <div id="battle-map">
-                        <div id="player">🤺</div>
+                    <div id="battle-map" style="width:100%; height:100%; background:#111; position:relative; overflow:hidden;">
+                        <div id="player" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:30px;">🤺</div>
                         <div id="enemy-spawn-area"></div>
                     </div>
-                    <button onclick="exitDungeon()" style="position:absolute; top:5px; right:5px; z-index:20;" class="btn-sm">후퇴</button>
+                    <button onclick="exitDungeon()" style="position:absolute; top:5px; right:5px;" class="btn-sm">후퇴</button>
                 </div>
             </div>
-            <div id="action-bar">
-                <button onclick="upgradePickaxe()" class="btn-sm gold-btn">⚒️ 곡괭이 강화</button>
-                <button onclick="upgradeAutoMine()" id="auto-mine-btn" class="btn-sm gold-btn">🤖 자동 채굴 속도 UP</button>
-                <button onclick="sortInventory()" class="btn-sm">🔄 자동 정렬</button>
-                <button onclick="massMerge(1)" class="btn-sm">🧪 일괄 합성(Lv.1)</button>
+            <div id="action-bar" style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; padding:10px;">
+                <button onclick="sortInventory()" class="btn-sm" style="background:var(--red);">🔄 자동 정렬</button>
+                <button onclick="openShop()" class="gold-btn">💎 상점 방문</button>
             </div>
             <div id="inventory-container">
                 <div id="inventory-grid"></div>
             </div>
         </main>
     </div>
-    <script src="data.js?v=1.7.0"></script>
-    <script src="battle.js?v=1.7.0"></script>
-    <script src="script.js?v=1.7.0"></script>
+    <div id="shop-modal"><div id="shop-content"></div></div>
+    <script src="data.js?v=1.8.0"></script>
+    <script src="battle.js?v=1.8.0"></script>
+    <script src="script.js?v=1.8.0"></script>
 </body>
 </html>
