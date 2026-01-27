@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 키우기 v1.5.0</title>
+    <title>치아 연대기 - Tooth Idle v1.5</title>
     <link rel="stylesheet" href="style.css?v=1.5.0">
 </head>
 <body>
     <div id="game-container">
         <nav id="top-nav">
-            <button onclick="switchView('mine')" id="tab-mine" class="active">⚒️ 치과 채굴</button>
-            <button onclick="switchView('war')" id="tab-war">⚔️ 전쟁터 출병</button>
+            <button onclick="switchView('mine')" id="tab-mine" class="active">⛏️ 광산 & 합성</button>
+            <button onclick="switchView('war')" id="tab-war">⚔️ 던전 출병</button>
         </nav>
 
         <header>
@@ -22,39 +22,42 @@
 
         <main>
             <div id="mine-view" class="game-view">
-                <div id="mine-bg"></div>
-                <div id="miner" onclick="manualMine()">⛏️</div>
-                <div id="mine-status">치과 채굴 중...</div>
-                <div id="mine-progress-container">
-                    <div id="mine-progress-fill"></div>
+                <div id="mine-rock" onclick="manualMine()">
+                    <div id="miner-char">🏃‍♂️⛏️</div>
+                    <div id="giant-tooth">🦷</div>
+                </div>
+                <div id="mine-ui">
+                    <div id="pickaxe-name">허름한 나무 곡괭이</div>
+                    <div class="progress-container">
+                        <div id="mine-bar"></div>
+                    </div>
                 </div>
             </div>
 
             <div id="war-view" class="game-view" style="display:none;">
-                <div id="war-bg"></div>
-                <div id="warrior">🤺</div>
-                <div id="enemy-area">
-                    <div id="hp-bar-container"><div id="hp-bar-fill"></div></div>
-                    <div id="enemy-sprite"></div>
+                <div id="battle-map">
+                    <div id="player">🤺</div>
+                    <div id="enemy-spawn-area"></div>
                 </div>
-                <div id="weapon-controller"></div>
+                <div id="war-weapon-slots"></div>
             </div>
 
-            <div id="menu-bar">
-                <button onclick="sortInventory()" class="btn-mini">🔄 정렬</button>
-                <button id="auto-btn" onclick="buyAutoCombine()" class="btn-mini">🤖 자동합성</button>
+            <div id="action-bar">
+                <button onclick="sortInventory()" class="btn-sm">🔄 정렬</button>
+                <button id="auto-combine-btn" onclick="buyAutoCombine()" class="btn-sm">🤖 자동합성(구매)</button>
+                <button onclick="upgradePickaxe()" id="pick-upgrade-btn" class="btn-sm gold-btn">⚒️ 곡괭이 강화</button>
             </div>
 
-            <div id="inventory-grid" class="grid-24"></div>
+            <div id="inventory-grid"></div>
         </main>
 
         <footer>
-            <div class="button-group">
-                <button onclick="manualMine()" class="btn-buy">⛏️ 수동 채굴</button>
-                <button id="expand-btn" onclick="expandInventory()" class="btn-expand">🎒 가방 확장</button>
-            </div>
+            <div id="msg-box">치과 광산에서 치아를 채굴하세요!</div>
         </footer>
     </div>
+
+    <script src="data.js?v=1.5.0"></script>
+    <script src="battle.js?v=1.5.0"></script>
     <script src="script.js?v=1.5.0"></script>
 </body>
 </html>
