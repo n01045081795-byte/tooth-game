@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v2.1.2</title>
-    <link rel="stylesheet" href="style.css?v=2.1.2">
+    <title>치아 연대기 v2.1.4</title>
+    <link rel="stylesheet" href="style.css?v=2.1.4">
 </head>
 <body>
     <div id="game-container">
@@ -21,24 +21,23 @@
         </header>
 
         <main id="main-content">
-            <div id="mine-view" class="game-view">
-                <div id="mine-rock-area" onclick="manualMine()">
+            <div id="mine-view">
+                <div id="mine-rock-area">
                     <div id="giant-tooth">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
+                
                 <div id="pickaxe-info">
                     <div id="pickaxe-name">허름한 나무 곡괭이</div>
-                    <div class="progress-container"><div id="mine-bar"></div></div>
-                </div>
-            </div>
-
-            <div id="war-view" class="game-view" style="display:none;">
-                <div id="mercenary-camp">
-                    <h4 style="color:var(--gold); margin:0 0 10px 5px;">🏰 용병 모집소</h4>
-                    <div id="mercenary-list"></div>
-                </div>
-                <div id="dungeon-list-container">
-                    <div id="dungeon-list"></div>
+                    
+                    <div class="progress-wrapper">
+                        <div class="progress-container"><div id="mine-bar"></div></div>
+                    </div>
+                    
+                    <div class="progress-wrapper">
+                        <span class="progress-label">⚡ 자동 합성 게이지</span>
+                        <div class="progress-container"><div id="merge-bar"></div></div>
+                    </div>
                 </div>
             </div>
 
@@ -47,14 +46,26 @@
                     <button onclick="sortInventory()" class="btn-red">🔄 자동 정렬</button>
                     <button onclick="openShop()" class="btn-gold">💎 Upgrade Lab</button>
                 </div>
-                <div id="inventory-scroll-area">
+                
+                <div id="inventory-container">
                     <div id="inventory-grid"></div>
                 </div>
+                
                 <div id="cheat-section">
-                    <input type="text" id="coupon-input" placeholder="쿠폰 코드 입력 (100b)">
+                    <input type="text" id="coupon-input" placeholder="쿠폰 코드 (100b)">
                     <button onclick="checkCoupon()" class="btn-sm">입력</button>
                     <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
                     <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
+                </div>
+            </div>
+
+            <div id="war-view" style="display:none;">
+                <div id="mercenary-camp">
+                    <h4 style="color:var(--gold); margin:0 0 10px 5px;">🏰 용병 모집소</h4>
+                    <div id="mercenary-list"></div>
+                </div>
+                <div id="dungeon-list-container">
+                    <div id="dungeon-list"></div>
                 </div>
             </div>
         </main>
@@ -74,11 +85,10 @@
     </div>
 
     <div id="drag-proxy"></div>
-    
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=2.1.2"></script>
-    <script src="battle.js?v=2.1.2"></script>
-    <script src="script.js?v=2.1.2"></script>
+    <script src="data.js?v=2.1.4"></script>
+    <script src="battle.js?v=2.1.4"></script>
+    <script src="script.js?v=2.1.4"></script>
 </body>
 </html>
