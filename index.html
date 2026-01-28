@@ -26,15 +26,12 @@
                     <div id="giant-tooth">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
-                
                 <div id="pickaxe-info">
                     <div id="pickaxe-name">허름한 나무 곡괭이</div>
-                    
                     <div class="progress-wrapper">
                         <span class="progress-label">⛏️ 채굴</span>
                         <div class="progress-container"><div id="mine-bar"></div></div>
                     </div>
-                    
                     <div class="progress-wrapper">
                         <span class="progress-label">⚡ 합성</span>
                         <div class="progress-container"><div id="merge-bar"></div></div>
@@ -51,13 +48,13 @@
                 <div id="inventory-scroll-area">
                     <div id="inventory-grid"></div>
                 </div>
-                
-                <div id="cheat-section">
-                    <input type="text" id="coupon-input" placeholder="쿠폰 코드 입력">
-                    <button onclick="checkCoupon()" class="btn-sm">입력</button>
-                    <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
-                    <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
-                </div>
+            </div>
+
+            <div id="cheat-section">
+                <input type="text" id="coupon-input" placeholder="쿠폰 코드">
+                <button onclick="checkCoupon()" class="btn-sm">입력</button>
+                <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
+                <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
             </div>
 
             <div id="war-view" style="display:none;">
@@ -86,7 +83,6 @@
     </div>
 
     <div id="drag-proxy"></div>
-    
     <div id="shop-modal"><div id="shop-content"></div></div>
 
     <script src="data.js?v=2.2.1"></script>
