@@ -1,4 +1,4 @@
-// Version: 2.2.1 - Protected Slots & 7 Rows
+// Version: 2.2.1 - 56 Slots & Protected Top Row
 let gold = 1000;
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -31,9 +31,9 @@ function loadGame() {
         const d = JSON.parse(saved);
         gold = d.gold || 1000; 
         maxSlots = d.maxSlots || 24; 
+        // 56칸으로 조정
         inventory = d.inventory || new Array(56).fill(0);
-        // 기존 64칸 데이터가 있을 경우 56칸으로 자름
-        if (inventory.length > 56) inventory = inventory.slice(0, 56);
+        if(inventory.length > 56) inventory = inventory.slice(0, 56);
         
         unlockedDungeon = d.unlockedDungeon || 1; pickaxeIdx = d.pickaxeIdx || 0;
         autoMineLevel = d.autoMineLevel || 1; isMiningPaused = d.isMiningPaused || false;
@@ -55,10 +55,10 @@ function loadGame() {
     }
 }
 
-// 스마트 자동 합성 (보호 구역 0~7 제외)
+// 스마트 자동 합성 (보호구역 0~7 제외)
 function autoMergeLowest() {
     let levelCounts = {};
-    // i=8부터 시작 (맨 윗줄 보호)
+    // i=8부터 탐색
     for(let i=8; i<maxSlots; i++) {
         const lv = inventory[i];
         if (lv > 0) {
@@ -81,10 +81,10 @@ function autoMergeLowest() {
     }
 }
 
-// 일괄 합성 (보호 구역 0~7 제외)
+// 일괄 합성 (보호구역 0~7 제외)
 function massMerge(lv, once = false) {
     let indices = [];
-    // i=8부터 시작 (맨 윗줄 보호)
+    // i=8부터 탐색
     inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < maxSlots) indices.push(idx); });
     
     if(indices.length < 2) return;
@@ -109,10 +109,10 @@ function massMerge(lv, once = false) {
     if(currentView === 'mine') renderInventory();
 }
 
-// 채굴 아이템 추가 (보호 구역 0~7 제외)
+// 채굴 아이템 추가 (보호구역 0~7 제외)
 function addMinedItem(pick) {
-    // 0~7은 건너뛰고 8번부터 빈칸 찾기
     let emptyIdx = -1;
+    // 8번부터 빈칸 탐색
     for(let i=8; i<maxSlots; i++) {
         if(inventory[i] === 0) {
             emptyIdx = i;
@@ -120,7 +120,7 @@ function addMinedItem(pick) {
         }
     }
     
-    // 꽉 찼으면 자동 합성 시도 후 재검색
+    // 꽉 찼으면 자동 합성 후 재탐색
     if (emptyIdx === -1) {
         autoMergeLowest();
         for(let i=8; i<maxSlots; i++) {
@@ -139,13 +139,13 @@ function addMinedItem(pick) {
     }
 }
 
-// 렌더링 (56칸)
 function renderInventory() {
     const grid = document.getElementById('inventory-grid');
     grid.innerHTML = '';
+    // 56칸 렌더링
     for (let i = 0; i < 56; i++) {
         const slot = document.createElement('div');
-        // 0~7번은 attack-slot 클래스
+        // 0~7번은 공격 슬롯 스타일
         slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= maxSlots ? 'locked-slot' : ''}`;
         slot.dataset.index = i;
         slot.id = `slot-${i}`;
@@ -183,7 +183,7 @@ function renderInventory() {
                     dragStartIdx = null;
                 }
             };
-            // 더블클릭: 8번 인덱스 이상일 때만 작동
+            // 더블클릭: 8번 이상일 때만 작동 (보호)
             slot.ondblclick = (e) => {
                 e.stopPropagation();
                 if(i >= 8 && inventory[i] > 0) massMerge(inventory[i]);
@@ -193,11 +193,23 @@ function renderInventory() {
     }
 }
 
-// 상점 렌더링 (확장 최대 4회, 총 7줄)
+function handleMoveOrMerge(from, to) {
+    if (from === to) return;
+    if (inventory[from] === inventory[to] && inventory[from] > 0) {
+        const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
+        const isGreat = Math.random() < pick.greatChance;
+        const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1;
+        inventory[to] = nextLv; inventory[from] = 0;
+        if(isGreat) triggerGreatSuccess(to); else playSfx('merge');
+    } else {
+        [inventory[from], inventory[to]] = [inventory[to], inventory[from]];
+    }
+    renderInventory(); saveGame();
+}
+
 function renderShopItems() {
     const content = document.getElementById('shop-content');
-    // 현재 56칸이 최대(3줄 시작 + 4줄 확장)
-    // 시작 maxSlots=24. (56-24)/8 = 4회 확장 가능.
+    // 확장 계산: (56 - 24) / 8 = 4회
     let expansionCount = (maxSlots - 24) / 8;
     
     content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
@@ -218,29 +230,19 @@ function renderShopItems() {
     content.innerHTML += `<button onclick="closeShop()" class="btn-red" style="width:100%; margin-top:20px;">닫기</button>`;
 }
 
-// 나머지 함수들은 기존 유지 (processMining, gameLoop 등)
-function processMining(amt) {
-    if (isMiningPaused) return;
-    const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
-    mineProgress += amt;
-    if (mineProgress >= 100) {
-        mineProgress = 0;
-        addMinedItem(pick);
-    }
-    updateUI();
+function sortInventory() {
+    // 8번부터 잘라서 정렬
+    let items = inventory.slice(8).filter(v => v > 0);
+    items.sort((a, b) => b - a);
+    // 8번부터 초기화 후 채워넣기
+    for(let i=8; i<56; i++) inventory[i] = 0;
+    items.forEach((v, i) => { if(i+8 < 56) inventory[i+8] = v; });
+    renderInventory(); saveGame();
 }
-function gameLoop() {
-    if(!isMiningPaused) {
-        processMining(TOOTH_DATA.pickaxes[pickaxeIdx].power * 0.02 * autoMineLevel);
-        const currentMaxTime = Math.max(1000, 25000 - (autoMergeSpeedLevel * 1000));
-        const increment = (50 / currentMaxTime) * 100;
-        mergeProgress += increment;
-        if (mergeProgress >= 100) { mergeProgress = 0; autoMergeLowest(); }
-    }
-    if (dungeonActive) updateBattle();
-    updateUI();
-}
-function handleMoveOrMerge(from, to) { if (from === to) return; if (inventory[from] === inventory[to] && inventory[from] > 0) { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const isGreat = Math.random() < pick.greatChance; const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1; inventory[to] = nextLv; inventory[from] = 0; if(isGreat) triggerGreatSuccess(to); else playSfx('merge'); } else { [inventory[from], inventory[to]] = [inventory[to], inventory[from]]; } renderInventory(); saveGame(); }
+
+// (나머지 기본 함수들은 그대로 유지)
+function processMining(amt) { if (isMiningPaused) return; const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; mineProgress += amt; if (mineProgress >= 100) { mineProgress = 0; addMinedItem(pick); } updateUI(); }
+function gameLoop() { if(!isMiningPaused) { processMining(TOOTH_DATA.pickaxes[pickaxeIdx].power * 0.02 * autoMineLevel); const currentMaxTime = Math.max(1000, 25000 - (autoMergeSpeedLevel * 1000)); const increment = (50 / currentMaxTime) * 100; mergeProgress += increment; if (mergeProgress >= 100) { mergeProgress = 0; autoMergeLowest(); } } if (dungeonActive) updateBattle(); updateUI(); }
 function moveProxy(e) { dragProxy.style.left = e.clientX + 'px'; dragProxy.style.top = e.clientY + 'px'; document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target')); const elements = document.elementsFromPoint(e.clientX, e.clientY); const targetSlot = elements.find(el => el.classList.contains('slot')); if(targetSlot && parseInt(targetSlot.dataset.index) < maxSlots) targetSlot.classList.add('drag-target'); }
 function triggerGreatSuccess(idx) { playSfx('great'); const slot = document.getElementById(`slot-${idx}`); if (slot) { slot.classList.add('shiny-effect'); setTimeout(() => slot.classList.remove('shiny-effect'), 1000); } }
 function openShop() { document.getElementById('shop-modal').style.display = 'flex'; renderShopItems(); }
@@ -248,15 +250,7 @@ function closeShop() { document.getElementById('shop-modal').style.display = 'no
 function buyItem(type, cost) {
     if (gold >= cost) {
         gold -= cost;
-        if (type === 'pick') {
-            pickaxeIdx++;
-            const newMinLv = TOOTH_DATA.pickaxes[pickaxeIdx].mineLv;
-            // 8번 이후 슬롯만 삭제 대상
-            for(let i=8; i<maxSlots; i++) {
-                if(inventory[i] > 0 && inventory[i] < newMinLv) inventory[i] = 0;
-            }
-            sortInventory();
-        } 
+        if (type === 'pick') { pickaxeIdx++; const newMinLv = TOOTH_DATA.pickaxes[pickaxeIdx].mineLv; for(let i=8; i<maxSlots; i++) { if(inventory[i] > 0 && inventory[i] < newMinLv) inventory[i] = 0; } sortInventory(); } 
         else if (type === 'auto') autoMineLevel++;
         else if (type === 'merge') autoMergeSpeedLevel++;
         else if (type === 'exp') maxSlots += 8;
@@ -266,15 +260,6 @@ function buyItem(type, cost) {
 function setupMiningTouch() { const mineArea = document.getElementById('mine-rock-area'); mineArea.addEventListener('pointerdown', (e) => { e.preventDefault(); const miner = document.getElementById('miner-char'); miner.style.animation = 'none'; miner.offsetHeight; miner.style.animation = 'hammer 0.1s ease-in-out'; playSfx('mine'); processMining(15); }); }
 function manualMine() {} 
 function toggleMining() { isMiningPaused = !isMiningPaused; document.getElementById('mine-toggle-btn').innerText = isMiningPaused ? "▶️ 재개" : "⏸️ 정지"; saveGame(); }
-function sortInventory() { 
-    // 정렬 시에도 0~7번 제외
-    let items = inventory.slice(8).filter(v => v > 0);
-    items.sort((a, b) => b - a);
-    // 8번부터 다시 채우기
-    for(let i=8; i<56; i++) inventory[i] = 0;
-    items.forEach((v, i) => { if(i+8 < 56) inventory[i+8] = v; });
-    renderInventory(); saveGame(); 
-}
 function updateUI() { document.getElementById('gold-display').innerText = fNum(gold); document.getElementById('mine-bar').style.width = mineProgress + '%'; document.getElementById('merge-bar').style.width = mergeProgress + '%'; document.getElementById('pickaxe-name').innerText = TOOTH_DATA.pickaxes[pickaxeIdx].name; saveGame(); }
 function switchView(view) { currentView = view; const isMine = view === 'mine'; const isWar = view === 'war'; document.getElementById('mine-view').style.display = isMine ? 'flex' : 'none'; document.getElementById('inventory-section').style.display = isMine ? 'flex' : 'none'; document.getElementById('war-view').style.display = isWar ? 'flex' : 'none'; document.getElementById('tab-mine').classList.toggle('active', isMine); document.getElementById('tab-war').classList.toggle('active', isWar); if (isWar) { renderDungeonList(); renderMercenaryCamp(); } else { renderInventory(); } }
 function checkCoupon() { const code = document.getElementById('coupon-input').value.trim(); if (code === "100b" || code === "RICH100B") { gold += 100000000000; alert("치트키 적용!"); updateUI(); } else { alert("유효하지 않음"); } }
