@@ -1,56 +1,62 @@
-/* Version: 2.2.3 - Mobile Viewport Fix & Layout */
+/* Version: 2.3.0 - Multi-touch & UI Update */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-
-/* 100dvh를 사용하여 모바일 주소창 대응 */
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
 
 #game-container { width: 100%; max-width: 450px; height: 100dvh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; }
 
-/* 상단바 */
+/* 상단 영역 */
 #top-nav { display: grid; grid-template-columns: 1fr 1fr; background: var(--blue); flex-shrink: 0; min-height: 45px; }
 #top-nav button { border: none; background: none; color: #888; font-weight: bold; font-size: 15px; cursor: pointer; }
 #top-nav button.active { color: #fff; border-bottom: 3px solid var(--red); background: rgba(255,255,255,0.05); }
 
-.stats-bar { display: flex; justify-content: space-around; padding: 5px; background: rgba(0,0,0,0.3); align-items: center; flex-shrink: 0; height: 40px; font-size: 14px; }
+.stats-bar { display: flex; justify-content: space-between; padding: 0 15px; background: rgba(0,0,0,0.3); align-items: center; flex-shrink: 0; height: 45px; font-size: 14px; }
+.control-group { display: flex; gap: 5px; } /* 버튼 그룹화 */
 
-/* 메인 컨텐츠 */
 #main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
 /* 광산 뷰 */
-#mine-view { height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 100%; background: var(--bg); border-bottom: 2px solid #000; z-index: 10; }
-#mine-rock-area { position: relative; width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+#mine-view { height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 100%; background: var(--bg); border-bottom: 2px solid #000; z-index: 10; }
+
+/* ★ 채굴 터치 영역 확대 (가로 꽉 채움 + 멀티터치 최적화) ★ */
+#mine-rock-area { 
+    position: relative; 
+    width: 100%; /* 가로 전체 */
+    height: 110px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    cursor: pointer; 
+    touch-action: manipulation; /* 줌 방지 */
+}
 #giant-tooth { font-size: 60px; z-index: 1; pointer-events: none; }
-#miner-char { font-size: 45px; position: absolute; right: -10px; top: 5px; transform-origin: bottom center; z-index: 2; pointer-events: none; }
-.swing { animation: hammer 0.1s ease-in-out; }
+#miner-char { font-size: 45px; position: absolute; right: 25%; top: 10px; transform-origin: bottom center; z-index: 2; pointer-events: none; }
+.swing { animation: hammer 0.08s ease-in-out; } /* 속도 더 빠르게 */
 @keyframes hammer { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } }
 
-#pickaxe-info { width: 90%; display: flex; flex-direction: column; align-items: center; margin-top: 5px; }
+#pickaxe-info { width: 90%; display: flex; flex-direction: column; align-items: center; margin-top: 2px; }
 #pickaxe-name { font-size: 12px; margin-bottom: 3px; color: #aaa; }
-.progress-wrapper { width: 100%; margin-bottom: 3px; display: flex; align-items: center; }
-.progress-label { font-size: 9px; color: #ccc; width: 60px; flex-shrink: 0; }
+.progress-wrapper { width: 100%; margin-bottom: 2px; display: flex; align-items: center; }
+.progress-label { font-size: 9px; color: #ccc; width: 60px; flex-shrink: 0; text-align: right; padding-right: 5px; }
 .progress-container { flex-grow: 1; height: 6px; background: #444; border-radius: 3px; overflow: hidden; }
 #mine-bar { width: 0%; height: 100%; background: #00fbff; transition: width 0.1s linear; }
 #merge-bar { width: 0%; height: 100%; background: #9b59b6; transition: width 0.1s linear; }
 
 /* 인벤토리 섹션 */
 #inventory-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; background: var(--bg); }
-
 #action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 10px; width: 100%; flex-shrink: 0; }
 #action-bar button { width: 100%; }
 
-/* 인벤토리 스크롤 (하단 여백 최소화) */
 #inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; min-height: 0; }
-#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; padding-bottom: 10px; }
+#inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; padding-bottom: 20px; }
 
-/* 하단 고정 영역 (치트 섹션 디자인 변경) */
+/* 하단 치트 섹션 */
 #cheat-section { 
     display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; 
     background: #222; margin: 0; border-top: 1px solid #444; flex-shrink: 0; width: 100%; height: 50px; 
 }
 .cheat-group-left { display: flex; gap: 5px; flex-grow: 1; margin-right: 10px; }
 .cheat-group-right { display: flex; gap: 5px; }
-
 #coupon-input { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; font-size: 11px; }
 
 /* 슬롯 스타일 */
@@ -66,13 +72,21 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 
 #drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
 
-/* 버튼 및 유틸 */
+/* 버튼 */
 .btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
+.btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
 .btn-exit { position: absolute; top: 15px; right: 15px; background: var(--red); color: white; padding: 10px 15px; border-radius: 6px; border: none; z-index: 50; cursor: pointer; }
 
-/* 던전/상점 등 유지 */
+/* 상점 */
+#shop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+#shop-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; }
+.shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; } /* 세로 배치로 변경하여 정보 표시 */
+.shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; }
+.shop-desc { font-size: 11px; color: #ccc; text-align: left; width: 100%; }
+
+/* 던전 등 기타 유지 */
 #war-view { display: none; flex-direction: column; height: 100%; }
 #mercenary-camp { background: #222; padding: 10px; border-bottom: 1px solid #444; flex-shrink: 0; }
 #mercenary-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
@@ -97,7 +111,3 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 @keyframes fadeUp { to { transform: translateY(-40px); opacity: 0; } }
 #war-weapon-slots { height: 70px; background: #0f3460; display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; z-index: 30; }
 .war-slot { background: #1a1a2e; border: 1px solid var(--red); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-#shop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-#shop-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; }
-.shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
-.shop-item p { margin: 0; color: #fff; font-weight: bold; }
