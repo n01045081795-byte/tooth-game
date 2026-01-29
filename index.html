@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v2.2.1</title>
-    <link rel="stylesheet" href="style.css?v=2.2.1">
+    <title>치아 연대기 v2.2.3</title>
+    <link rel="stylesheet" href="style.css?v=2.2.3">
 </head>
 <body>
     <div id="game-container">
@@ -26,6 +26,7 @@
                     <div id="giant-tooth">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
+                
                 <div id="pickaxe-info">
                     <div id="pickaxe-name">허름한 나무 곡괭이</div>
                     <div class="progress-wrapper">
@@ -48,13 +49,17 @@
                 <div id="inventory-scroll-area">
                     <div id="inventory-grid"></div>
                 </div>
-            </div>
-
-            <div id="cheat-section">
-                <input type="text" id="coupon-input" placeholder="쿠폰 코드">
-                <button onclick="checkCoupon()" class="btn-sm">입력</button>
-                <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
-                <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
+                
+                <div id="cheat-section">
+                    <div class="cheat-group-left">
+                        <input type="text" id="coupon-input" placeholder="쿠폰 입력">
+                        <button onclick="checkCoupon()" class="btn-sm" style="background:var(--gold); color:black;">확인</button>
+                    </div>
+                    <div class="cheat-group-right">
+                        <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
+                        <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
+                    </div>
+                </div>
             </div>
 
             <div id="war-view" style="display:none;">
@@ -85,8 +90,8 @@
     <div id="drag-proxy"></div>
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=2.2.1"></script>
-    <script src="battle.js?v=2.2.1"></script>
-    <script src="script.js?v=2.2.1"></script>
+    <script src="data.js?v=2.2.3"></script>
+    <script src="battle.js?v=2.2.3"></script>
+    <script src="script.js?v=2.2.3"></script>
 </body>
 </html>
