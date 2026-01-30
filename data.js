@@ -1,4 +1,4 @@
-// Version: 2.4.0 - Pickaxe Icons & Slot Upgrades
+// Version: 3.3.0 - Mercenary HP & Dungeon Info
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
@@ -12,27 +12,28 @@ const TOOTH_DATA = {
         { name: "카본 초합금 곡괭이", cost: 10000000, power: 300, mineLv: 4, greatChance: 0.25, icon: "🔮" },
         { name: "신화의 오리할콘 곡괭이", cost: 50000000, power: 500, mineLv: 4, greatChance: 0.35, icon: "👑" }
     ],
+    // 용병 데이터 (baseHp 추가)
     mercenaries: [
-        { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, icon: "👨‍🌾" },
-        { id: 1, name: "마을 경비병", cost: 5000, atkMul: 1.2, icon: "👮‍♂️" },
-        { id: 2, name: "견습 검사", cost: 20000, atkMul: 1.5, icon: "🤺" },
-        { id: 3, name: "숙련된 사냥꾼", cost: 50000, atkMul: 1.8, icon: "🏹" },
-        { id: 4, name: "왕국 기사", cost: 150000, atkMul: 2.2, icon: "💂‍♂️" },
-        { id: 5, name: "전투 사제", cost: 400000, atkMul: 2.6, icon: "🧙‍♂️" },
-        { id: 6, name: "그림자 암살자", cost: 1000000, atkMul: 3.2, icon: "🥷" },
-        { id: 7, name: "엘프 명사수", cost: 3000000, atkMul: 4.0, icon: "🧝‍♀️" },
-        { id: 8, name: "오크 전사", cost: 8000000, atkMul: 5.0, icon: "👹" },
-        { id: 9, name: "드워프 공학자", cost: 20000000, atkMul: 6.5, icon: "👷" },
-        { id: 10, name: "화염 마법사", cost: 50000000, atkMul: 8.5, icon: "🔥" },
-        { id: 11, name: "냉기 마녀", cost: 150000000, atkMul: 11.0, icon: "❄️" },
-        { id: 12, name: "강철의 골렘", cost: 400000000, atkMul: 15.0, icon: "🤖" },
-        { id: 13, name: "뱀파이어 로드", cost: 1000000000, atkMul: 20.0, icon: "🧛" },
-        { id: 14, name: "드래곤 슬레이어", cost: 3000000000, atkMul: 30.0, icon: "🐲" },
-        { id: 15, name: "성기사 단장", cost: 10000000000, atkMul: 45.0, icon: "⚜️" },
-        { id: 16, name: "차원 방랑자", cost: 50000000000, atkMul: 70.0, icon: "🌌" },
-        { id: 17, name: "데몬 헌터", cost: 200000000000, atkMul: 100.0, icon: "😈" },
-        { id: 18, name: "천상의 수호자", cost: 1000000000000, atkMul: 150.0, icon: "👼" },
-        { id: 19, name: "치아의 신", cost: 10000000000000, atkMul: 300.0, icon: "🦷" }
+        { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, baseHp: 100, spd: 1.0, icon: "👨‍🌾" },
+        { id: 1, name: "마을 경비병", cost: 5000, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
+        { id: 2, name: "견습 검사", cost: 20000, atkMul: 1.5, baseHp: 200, spd: 1.2, icon: "🤺" },
+        { id: 3, name: "숙련된 사냥꾼", cost: 50000, atkMul: 1.8, baseHp: 180, spd: 1.3, icon: "🏹" },
+        { id: 4, name: "왕국 기사", cost: 150000, atkMul: 2.2, baseHp: 300, spd: 1.1, icon: "💂‍♂️" },
+        { id: 5, name: "전투 사제", cost: 400000, atkMul: 2.6, baseHp: 250, spd: 1.2, icon: "🧙‍♂️" },
+        { id: 6, name: "그림자 암살자", cost: 1000000, atkMul: 3.2, baseHp: 200, spd: 1.5, icon: "🥷" },
+        { id: 7, name: "엘프 명사수", cost: 3000000, atkMul: 4.0, baseHp: 280, spd: 1.4, icon: "🧝‍♀️" },
+        { id: 8, name: "오크 전사", cost: 8000000, atkMul: 5.0, baseHp: 500, spd: 1.0, icon: "👹" },
+        { id: 9, name: "드워프 공학자", cost: 20000000, atkMul: 6.5, baseHp: 400, spd: 1.2, icon: "👷" },
+        { id: 10, name: "화염 마법사", cost: 50000000, atkMul: 8.5, baseHp: 350, spd: 1.3, icon: "🔥" },
+        { id: 11, name: "냉기 마녀", cost: 150000000, atkMul: 11.0, baseHp: 400, spd: 1.3, icon: "❄️" },
+        { id: 12, name: "강철의 골렘", cost: 400000000, atkMul: 15.0, baseHp: 1000, spd: 0.8, icon: "🤖" },
+        { id: 13, name: "뱀파이어 로드", cost: 1000000000, atkMul: 20.0, baseHp: 600, spd: 1.4, icon: "🧛" },
+        { id: 14, name: "드래곤 슬레이어", cost: 3000000000, atkMul: 30.0, baseHp: 800, spd: 1.3, icon: "🐲" },
+        { id: 15, name: "성기사 단장", cost: 10000000000, atkMul: 45.0, baseHp: 1200, spd: 1.2, icon: "⚜️" },
+        { id: 16, name: "차원 방랑자", cost: 50000000000, atkMul: 70.0, baseHp: 900, spd: 1.6, icon: "🌌" },
+        { id: 17, name: "데몬 헌터", cost: 200000000000, atkMul: 100.0, baseHp: 1500, spd: 1.5, icon: "😈" },
+        { id: 18, name: "천상의 수호자", cost: 1000000000000, atkMul: 150.0, baseHp: 2000, spd: 1.4, icon: "👼" },
+        { id: 19, name: "치아의 신", cost: 10000000000000, atkMul: 300.0, baseHp: 5000, spd: 2.0, icon: "🦷" }
     ],
     dungeons: [
         "시작의 이끼 동굴", "낡은 해골 병영", "침묵의 지하 수로", "버려진 광산 심부", 
@@ -44,7 +45,7 @@ const TOOTH_DATA = {
     invExpansion: [5000, 50000, 500000, 5000000]
 };
 
-// Web Audio API
+// Web Audio API (기존 유지)
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration, vol = 0.1) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -69,6 +70,7 @@ function playSfx(name) {
         case 'attack': playTone(800, 'sawtooth', 0.05, 0.05); break;
         case 'hit': playTone(100, 'noise', 0.05, 0.1); break;
         case 'upgrade': playTone(600, 'square', 0.1, 0.1); setTimeout(() => playTone(900, 'square', 0.1, 0.1), 100); break;
+        case 'damage': playTone(80, 'sawtooth', 0.2, 0.2); break; // 피격음
     }
 }
 
