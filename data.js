@@ -1,11 +1,10 @@
-// Version: 3.4.0 - Pickaxe Luck & Sound Logic
+// Version: 3.4.0 - Pickaxe Luck & Stats
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
-    // 곡괭이: power(속도) 제거 -> baseLv(기본레벨) 및 luck(상위티어확률) 위주
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, baseLv: 1, luck: 0.05, icon: "🪵" },
-        { name: "무딘 구리 곡괭이", cost: 1000, baseLv: 1, luck: 0.15, icon: "🪨" }, // 1~2렙
-        { name: "튼튼한 철 곡괭이", cost: 5000, baseLv: 2, luck: 0.20, icon: "⛏️" }, // 2~3렙
+        { name: "무딘 구리 곡괭이", cost: 1000, baseLv: 1, luck: 0.15, icon: "🪨" },
+        { name: "튼튼한 철 곡괭이", cost: 5000, baseLv: 2, luck: 0.20, icon: "⛏️" },
         { name: "연마된 강철 곡괭이", cost: 25000, baseLv: 2, luck: 0.35, icon: "⚔️" },
         { name: "빛나는 황금 곡괭이", cost: 100000, baseLv: 3, luck: 0.40, icon: "⚜️" },
         { name: "고강도 티타늄 곡괭이", cost: 500000, baseLv: 3, luck: 0.55, icon: "💠" },
@@ -61,8 +60,8 @@ function playTone(freq, type, duration, vol = 0.1) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
-// playSfx는 script.js에서 오버라이드하여 탭별 소리 제어함
 function playSfx(name) {
+    // script.js 에서 오버라이드하여 제어하므로 여기서는 기본 함수만 제공
     if (audioCtx.state === 'suspended') audioCtx.resume();
     switch (name) {
         case 'mine': playTone(150, 'square', 0.1, 0.1); break;
