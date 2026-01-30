@@ -1,6 +1,7 @@
-// Version: 2.1.3 - Sequential Fire
+// Version: 2.4.0 - Battle with Refine Stats
 let enemies = [];
 let missiles = [];
+let weaponCD = new Array(8).fill(0);
 let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
@@ -8,10 +9,10 @@ let dungeonActive = false;
 let playerPos = { x: 50, y: 80 };
 let currentMercenary = TOOTH_DATA.mercenaries[0];
 
-// 순차 발사 변수
+// 순차 발사
 let fireIndex = 0;
 let fireTimer = 0;
-const FIRE_RATE = 200; // 발사 간격 (ms) - 레벨업에 따라 줄어듬
+const FIRE_RATE = 200;
 
 function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
@@ -65,25 +66,26 @@ function spawnEnemy(isBoss = false) {
 function updateBattle() {
     if (!dungeonActive) return;
     
-    // 순차 발사 로직
-    fireTimer += 50; // loop interval is 50ms
+    fireTimer += 50; 
     if (fireTimer >= FIRE_RATE) {
         fireTimer = 0;
         
-        // 현재 인덱스 발사 시도
+        // 제련 쿨타임 감소 적용
+        // slotUpgrades[fireIndex].cd 만큼 쿨타임 감소 효과 (확률적 더블 샷 등으로 구현 가능하지만 여기선 단순 발사)
         if (inventory[fireIndex] > 0) {
             shoot(fireIndex);
+            
+            // 쿨타임 레벨이 높으면 확률적으로 한 번 더 발사 (간단한 구현)
+            if (Math.random() < slotUpgrades[fireIndex].cd * 0.05) {
+                setTimeout(() => shoot(fireIndex), 100);
+            }
         }
-        // 다음 인덱스로 (빈칸이어도 딜레이 후 넘어감)
         fireIndex = (fireIndex + 1) % 8;
-        
-        // 시각적으로 현재 발사 슬롯 강조 (옵션)
         highlightFireSlot(fireIndex);
     }
 
-    // 미사일 처리
     missiles.forEach((m, mIdx) => {
-        m.y -= 3.0;
+        m.y -= 3.0; // 기본 속도
         m.el.style.left = m.x + '%'; m.el.style.top = m.y + '%';
         enemies.forEach((en, eIdx) => {
             const d = Math.sqrt(Math.pow(m.x - en.x, 2) + Math.pow(m.y - en.y, 2));
@@ -100,7 +102,9 @@ function updateBattle() {
                 }
             }
         });
-        if (m.y < -10) { m.el.remove(); missiles.splice(mIdx, 1); }
+        // 제련 사거리 증가 적용 (화면 위로 더 멀리 날아감 - 판정은 유지하되 삭제 시점 연장)
+        const rangeLimit = -10 - (slotUpgrades[m.slotIdx].rng * 2);
+        if (m.y < rangeLimit) { m.el.remove(); missiles.splice(mIdx, 1); }
     });
 
     enemies.forEach(en => {
@@ -114,20 +118,22 @@ function shoot(slotIdx) {
     const area = document.getElementById('enemy-spawn-area');
     const mEl = document.createElement('div');
     mEl.className = 'missile';
-    
-    // 발사체 시각화: 실제 치아 아이콘 사용
     mEl.innerHTML = getToothIcon(inventory[slotIdx]);
     mEl.style.fontSize = "20px";
-    
     area.appendChild(mEl);
-    const finalDmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul;
-    missiles.push({ el: mEl, x: playerPos.x, y: playerPos.y, dmg: finalDmg });
+    
+    // ★ 제련 공격력 적용 ★
+    // 기본 데미지 * 용병 배율 * (1 + 제련레벨 * 0.1)
+    let refineMul = 1 + (slotUpgrades[slotIdx].atk * 0.1);
+    const finalDmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul * refineMul;
+    
+    missiles.push({ el: mEl, x: playerPos.x, y: playerPos.y, dmg: finalDmg, slotIdx: slotIdx });
 }
 
 function highlightFireSlot(idx) {
     document.querySelectorAll('.war-slot').forEach(s => s.style.borderColor = '#e94560');
     const slots = document.querySelectorAll('.war-slot');
-    if(slots[idx]) slots[idx].style.borderColor = '#fff'; // 현재 턴 강조
+    if(slots[idx]) slots[idx].style.borderColor = '#fff';
 }
 
 function showDmgText(x, y, dmg) {
