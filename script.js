@@ -1,4 +1,4 @@
-// Version: 3.4.0 - Smart Sound, Balanced Mining, Stop on Full
+// Version: 3.4.0 - Smart Sound & Balanced Mining
 let gold = 1000;
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -44,17 +44,14 @@ function loadGame() {
         
         if (!isMiningPaused && d.lastTime) {
             const offTime = (Date.now() - d.lastTime) / 1000;
-            // 오프라인 계산: 속도 대폭 너프 (레벨당 0.05초 단축 효과 정도)
-            // 기본 1.5초, 레벨당 조금씩 빨라짐
+            // 오프라인 계산: 속도 조절
             const miningSpeed = Math.max(0.1, 1.5 - (autoMineLevel * 0.02)); 
-            const pps = 100 / (miningSpeed * 1000 / 50); // tick당 진행도
-            
-            const minedCount = Math.floor(offTime / miningSpeed); // 근사치
+            const minedCount = Math.floor(offTime / miningSpeed); 
             const currentMaxTime = Math.max(1000, 25000 - (autoMergeSpeedLevel * 1000));
             const merges = Math.floor((offTime * 1000) / currentMaxTime);
             
             for(let k=0; k < merges; k++) autoMergeLowest();
-            // 오프라인 채굴도 꽉 차면 멈추도록 시뮬레이션
+            // 오프라인 채굴도 꽉 차면 멈춤
             for(let i=0; i < minedCount; i++) {
                 if(!addMinedItem()) break; 
             }
@@ -64,32 +61,29 @@ function loadGame() {
     updatePickaxeVisual();
 }
 
-// ★ 스마트 사운드 제어 (핵심) ★
-// data.js의 playSfx를 덮어씀
+// 스마트 사운드 제어
 const originalPlaySfx = window.playSfx;
 window.playSfx = function(name) {
-    if (isMuted) return; // 전역 음소거
-    if (document.hidden) return; // 브라우저 최소화/백그라운드 시 차단
+    if (isMuted) return; 
+    if (document.hidden) return; // 백그라운드 시 차단
 
     // 탭별 소리 분리
     if (name === 'mine' || name === 'merge' || name === 'upgrade' || name === 'great') {
-        if (currentView !== 'mine' && currentView !== 'refine') return; // 채굴탭 아니면 채굴소리 X
+        if (currentView !== 'mine' && currentView !== 'refine') return;
     }
     if (name === 'attack' || name === 'hit' || name === 'damage') {
-        if (currentView !== 'war') return; // 던전탭 아니면 전투소리 X
+        if (currentView !== 'war') return;
     }
 
     if (originalPlaySfx) originalPlaySfx(name);
 };
 
-// 채굴 메인 루프
+// 채굴 루프
 function gameLoop() {
     if(!isMiningPaused) {
-        // 속도 공식 수정: 곡괭이 파워 제외, 순수 자동채굴 레벨 의존
-        // 기본 1.5초에서 레벨당 0.02초씩 단축 (최소 0.1초)
+        // 속도: 기본 1.5초 - (레벨 * 0.02)
         const miningSpeedSec = Math.max(0.1, 1.5 - (autoMineLevel * 0.02)); 
-        // 50ms마다 호출되므로, 100% 채우려면 (speed * 1000 / 50) 틱 필요
-        const tickAmt = 100 / (miningSpeedSec * 20); 
+        const tickAmt = 100 / (miningSpeedSec * 20); // 50ms 기준
         
         processMining(tickAmt);
         
@@ -109,40 +103,36 @@ function gameLoop() {
 function processMining(amt) {
     mineProgress += amt;
     if (mineProgress >= 100) {
-        mineProgress = 100; // 100에서 대기
+        mineProgress = 100;
         if (addMinedItem()) {
-            mineProgress = 0; // 성공적으로 넣었을 때만 리셋
+            mineProgress = 0; 
         }
     }
     updateUI();
 }
 
-// 아이템 추가 로직 (실패 시 false 반환)
+// 아이템 추가 (성공 시 true)
 function addMinedItem() {
     let emptyIdx = -1;
-    // 8번부터 빈칸 탐색
     for(let i=8; i<maxSlots; i++) { if(inventory[i] === 0) { emptyIdx = i; break; } }
     
-    // 꽉 찼으면 자동 합성 1회 시도 후 재탐색
+    // 꽉 찼으면 자동 합성 후 재탐색
     if (emptyIdx === -1) {
         autoMergeLowest();
         for(let i=8; i<maxSlots; i++) { if(inventory[i] === 0) { emptyIdx = i; break; } }
     }
     
-    // 그래도 없으면 실패 (채굴 중단 효과)
+    // 그래도 없으면 실패
     if (emptyIdx === -1) return false;
     
-    // 성공 시: 곡괭이 확률 적용
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     let resultLv = pick.baseLv;
     const rng = Math.random();
     
-    // Luck에 따라 +1, +2 티어 확률
-    // 예: luck 0.15 -> 15% 확률로 +1 티어
-    if (rng < pick.luck * 0.2) resultLv += 2; // 대박
-    else if (rng < pick.luck) resultLv += 1; // 중박
+    // Luck 적용: 등급 상승 확률
+    if (rng < pick.luck * 0.2) resultLv += 2; 
+    else if (rng < pick.luck) resultLv += 1; 
     
-    // 던전 해금 보정 (최소 던전 보상 레벨 보장)
     resultLv = Math.max(resultLv, unlockedDungeon);
     
     inventory[emptyIdx] = resultLv;
@@ -153,14 +143,13 @@ function addMinedItem() {
     return true;
 }
 
-// 상점 (텍스트 개선)
+// 상점 (업그레이드 정보 표시)
 function renderShopItems() {
     const content = document.getElementById('shop-content');
     let expansionCount = (maxSlots - 24) / 8;
     content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
     const container = document.getElementById('shop-items-container');
     
-    // 곡괭이
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
     if (pickNext) {
@@ -171,7 +160,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 자동 채굴
     const autoCost = autoMineLevel * 2000;
     const curSpd = Math.max(0.1, 1.5 - (autoMineLevel * 0.02)).toFixed(2);
     const nextSpd = Math.max(0.1, 1.5 - ((autoMineLevel+1) * 0.02)).toFixed(2);
@@ -181,7 +169,6 @@ function renderShopItems() {
         <div class="shop-desc">속도: ${curSpd}초 ➔ ${nextSpd}초 (Lv.${autoMineLevel} ➔ ${autoMineLevel+1})</div>
     </div>`;
     
-    // 자동 합성
     const mergeCost = autoMergeSpeedLevel * 50000;
     const curMerge = Math.max(1, 25 - autoMergeSpeedLevel).toFixed(1);
     const nextMerge = Math.max(1, 25 - (autoMergeSpeedLevel + 1)).toFixed(1);
@@ -193,7 +180,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 확장
     if (expansionCount < 4) {
         const expCost = TOOTH_DATA.invExpansion[expansionCount];
         container.innerHTML += `
@@ -202,7 +188,6 @@ function renderShopItems() {
             <div class="shop-desc">8칸 추가 개방</div>
         </div>`;
     }
-    
     content.innerHTML += `<button onclick="closeShop()" class="btn-red" style="width:100%; margin-top:20px;">닫기</button>`;
 }
 
@@ -219,9 +204,6 @@ function moveProxy(e) { dragProxy.style.left = e.clientX + 'px'; dragProxy.style
 function updatePickaxeVisual() { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; document.getElementById('miner-char').innerText = pick.icon || "⛏️"; }
 function createHitEffect(x, y) { const effect = document.createElement('div'); effect.className = 'hit-effect'; effect.innerText = "💥"; effect.style.left = x + 'px'; effect.style.top = y + 'px'; document.body.appendChild(effect); setTimeout(() => effect.remove(), 400); }
 function setupMiningTouch() { const mineArea = document.getElementById('mine-rock-area'); mineArea.addEventListener('pointerdown', (e) => { e.preventDefault(); const miner = document.getElementById('miner-char'); miner.style.animation = 'none'; miner.offsetHeight; miner.style.animation = 'hammer 0.08s ease-in-out'; playSfx('mine'); processMining(15); createHitEffect(e.clientX, e.clientY); }); }
-function manualMine() {} 
-function toggleMining() { isMiningPaused = !isMiningPaused; document.getElementById('mine-toggle-btn').innerText = isMiningPaused ? "▶️ 재개" : "⏸️ 정지"; saveGame(); }
-function switchView(view) { currentView = view; document.getElementById('mine-view').style.display = (view === 'mine' || view === 'refine') ? 'flex' : 'none'; if(view === 'refine') document.getElementById('mine-view').style.display = 'none'; document.getElementById('inventory-section').style.display = view === 'mine' ? 'flex' : 'none'; document.getElementById('refine-view').style.display = view === 'refine' ? 'flex' : 'none'; document.getElementById('war-view').style.display = view === 'war' ? 'flex' : 'none'; document.getElementById('tab-mine').classList.toggle('active', view === 'mine'); document.getElementById('tab-refine').classList.toggle('active', view === 'refine'); document.getElementById('tab-war').classList.toggle('active', view === 'war'); if (view === 'war') { renderDungeonList(); renderMercenaryCamp(); } else if (view === 'refine') { renderRefineView(); } else { renderInventory(); } }
 function checkCoupon() { const code = document.getElementById('coupon-input').value.trim(); if (code === "100b" || code === "RICH100B") { gold += 100000000000; alert("치트키 적용!"); updateUI(); } else { alert("유효하지 않음"); } }
 function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV340'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
 function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV340', decoded); location.reload(); } catch (e) { alert("오류"); } } }
@@ -231,12 +213,14 @@ function buyMerc(id, cost) { if(gold >= cost) { gold -= cost; ownedMercenaries.p
 function equipMerc(id) { mercenaryIdx = id; renderMercenaryCamp(); saveGame(); }
 function toggleSound() { isMuted = !isMuted; updateSoundBtn(); saveGame(); }
 function updateSoundBtn() { const btn = document.getElementById('sound-btn'); if (isMuted) { btn.innerText = "🔇 OFF"; btn.style.background = "#555"; btn.style.color = "#ccc"; } else { btn.innerText = "🔊 ON"; btn.style.background = "#f1c40f"; btn.style.color = "black"; } }
+function toggleMining() { isMiningPaused = !isMiningPaused; document.getElementById('mine-toggle-btn').innerText = isMiningPaused ? "▶️ 재개" : "⏸️ 정지"; saveGame(); }
+function switchView(view) { currentView = view; document.getElementById('mine-view').style.display = (view === 'mine' || view === 'refine') ? 'flex' : 'none'; if(view === 'refine') document.getElementById('mine-view').style.display = 'none'; document.getElementById('inventory-section').style.display = view === 'mine' ? 'flex' : 'none'; document.getElementById('refine-view').style.display = view === 'refine' ? 'flex' : 'none'; document.getElementById('war-view').style.display = view === 'war' ? 'flex' : 'none'; document.getElementById('tab-mine').classList.toggle('active', view === 'mine'); document.getElementById('tab-refine').classList.toggle('active', view === 'refine'); document.getElementById('tab-war').classList.toggle('active', view === 'war'); if (view === 'war') { renderDungeonList(); renderMercenaryCamp(); } else if (view === 'refine') { renderRefineView(); } else { renderInventory(); } }
 function openShop() { document.getElementById('shop-modal').style.display = 'flex'; renderShopItems(); }
 function closeShop() { document.getElementById('shop-modal').style.display = 'none'; }
 function renderRefineView() { const grid = document.getElementById('refine-grid'); grid.innerHTML = ''; slotUpgrades.forEach((slot, idx) => { const card = document.createElement('div'); card.className = 'refine-card'; const costAtk = (slot.atk + 1) * 5000; const costCd = (slot.cd + 1) * 10000; const costRng = (slot.rng + 1) * 8000; card.innerHTML = `<div class="refine-header">🔥 슬롯 #${idx+1}</div><div class="refine-btn" onclick="upgradeSlot(${idx}, 'atk', ${costAtk})"><span>⚔️공격 ${slot.atk}</span> <span>${fNum(costAtk)}</span></div><div class="refine-btn" onclick="upgradeSlot(${idx}, 'cd', ${costCd})"><span>⏳쿨탐 ${slot.cd}</span> <span>${fNum(costCd)}</span></div><div class="refine-btn" onclick="upgradeSlot(${idx}, 'rng', ${costRng})"><span>🏹사거리 ${slot.rng}</span> <span>${fNum(costRng)}</span></div>`; grid.appendChild(card); }); }
 function upgradeSlot(idx, type, cost) { if (gold >= cost) { gold -= cost; slotUpgrades[idx][type]++; playSfx('upgrade'); renderRefineView(); updateUI(); } else { alert("골드 부족"); } }
+function manualMine() {} 
 
-// 가시성 이벤트 (탭 전환 시 소리 끔)
 document.addEventListener("visibilitychange", () => { if (document.hidden) { if(audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } else { if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } });
 
 window.onload = () => { loadGame(); setupMiningTouch(); switchView('mine'); setInterval(gameLoop, 50); };
