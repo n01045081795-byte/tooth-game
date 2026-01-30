@@ -1,4 +1,4 @@
-// Version: 3.2.0 - Joystick & Movement Fix
+// Version: 3.3.0 - Movement Fix & HP System
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -13,6 +13,11 @@ let worldHeight = window.innerHeight * 2;
 let playerX = 0; let playerY = 0;
 let currentMercenary = TOOTH_DATA.mercenaries[0];
 
+// 플레이어 상태
+let playerHp = 100;
+let playerMaxHp = 100;
+let isInvincible = false;
+
 // 조이스틱
 let joystickActive = false;
 let moveX = 0; let moveY = 0;
@@ -26,34 +31,40 @@ function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
     
-    // 월드 크기 및 플레이어 위치 초기화
     worldWidth = window.innerWidth * 2;
     worldHeight = window.innerHeight * 2;
     playerX = worldWidth / 2;
     playerY = worldHeight / 2;
     
-    // UI 전환
     document.getElementById('top-nav').style.display = 'none';
     document.getElementById('game-container').style.display = 'none';
     document.getElementById('battle-screen').style.display = 'block';
     document.getElementById('current-dungeon-name').innerText = TOOTH_DATA.dungeons[idx];
     
-    // 플레이어 생성
-    let playerEl = document.getElementById('player');
-    if (!playerEl) {
-        playerEl = document.createElement('div');
-        playerEl.id = 'player';
-        document.getElementById('battle-world').appendChild(playerEl);
-    }
     updateMercenary();
-    updatePlayerPos();
     
+    // 플레이어 DOM 생성 (HP바 포함)
+    let playerEl = document.getElementById('player');
+    if (playerEl) playerEl.remove(); // 기존 제거 후 재생성
+    playerEl = document.createElement('div');
+    playerEl.id = 'player';
+    playerEl.innerHTML = `
+        <div id="player-hp-bar-bg"><div id="player-hp-bar-fill"></div></div>
+        <div id="player-char">${currentMercenary.icon}</div>
+    `;
+    document.getElementById('battle-world').appendChild(playerEl);
+    
+    // HP 초기화
+    playerMaxHp = currentMercenary.baseHp;
+    playerHp = playerMaxHp;
+    updatePlayerHpBar();
+    
+    updatePlayerPos();
     renderWarWeapons();
     weaponCD.fill(0);
     
     spawnWave();
     
-    // 조이스틱 리스너 중복 방지
     if (!window.joystickInitialized) {
         setupJoystick();
         window.joystickInitialized = true;
@@ -65,13 +76,19 @@ function startDungeon(idx) {
 function updateMercenary() {
     if (!TOOTH_DATA.mercenaries[mercenaryIdx]) mercenaryIdx = 0;
     currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx];
-    document.getElementById('player').innerText = currentMercenary.icon;
+}
+
+function updatePlayerHpBar() {
+    const fill = document.getElementById('player-hp-bar-fill');
+    if (fill) fill.style.width = (playerHp / playerMaxHp * 100) + '%';
 }
 
 function updatePlayerPos() {
     const p = document.getElementById('player');
-    p.style.left = playerX + 'px';
-    p.style.top = playerY + 'px';
+    if(p) {
+        p.style.left = playerX + 'px';
+        p.style.top = playerY + 'px';
+    }
 }
 
 function spawnWave() {
@@ -111,9 +128,10 @@ function battleLoop() {
 }
 
 function updatePlayerMovement() {
-    if (moveX === 0 && moveY === 0) return;
+    // 조이스틱 데이터 확인 후 이동
+    if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return;
     
-    const speed = 5 * currentMercenary.spd; 
+    const speed = 5 * (currentMercenary.spd || 1.0); 
     playerX += moveX * speed;
     playerY += moveY * speed;
     playerX = Math.max(20, Math.min(worldWidth - 20, playerX));
@@ -121,8 +139,8 @@ function updatePlayerMovement() {
     
     updatePlayerPos();
     
-    const p = document.getElementById('player');
-    p.style.transform = moveX < 0 ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%) scaleX(1)';
+    const char = document.getElementById('player-char');
+    if(char) char.style.transform = moveX < 0 ? 'scaleX(-1)' : 'scaleX(1)';
 }
 
 function updateCamera() {
@@ -132,7 +150,7 @@ function updateCamera() {
 }
 
 function updateCombat() {
-    // 적 이동 (AI 수정: 플레이어를 향해 멈추지 않고 이동)
+    // 1. 적 이동 및 플레이어 충돌 처리
     enemies.forEach(en => {
         const dx = playerX - en.x;
         const dy = playerY - en.y;
@@ -142,8 +160,14 @@ function updateCombat() {
         en.y += Math.sin(angle) * speed;
         en.el.style.left = en.x + 'px';
         en.el.style.top = en.y + 'px';
+        
+        // 플레이어와 충돌 (거리 30 이내)
+        if (!isInvincible && Math.hypot(playerX - en.x, playerY - en.y) < 30) {
+            takeDamage(10 + (currentDungeonIdx * 5));
+        }
     });
 
+    // 2. 무기 발사
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => {
         const d = Math.hypot(playerX - en.x, playerY - en.y);
@@ -171,6 +195,7 @@ function updateCombat() {
         }
     }
 
+    // 3. 미사일 충돌
     for (let i = missiles.length - 1; i >= 0; i--) {
         const m = missiles[i];
         m.x += m.vx; m.y += m.vy;
@@ -196,6 +221,26 @@ function updateCombat() {
                 break;
             }
         }
+    }
+}
+
+function takeDamage(amount) {
+    playerHp -= amount;
+    updatePlayerHpBar();
+    playSfx('damage');
+    
+    // 무적 처리
+    isInvincible = true;
+    const p = document.getElementById('player');
+    p.classList.add('invincible');
+    setTimeout(() => {
+        isInvincible = false;
+        p.classList.remove('invincible');
+    }, 1000); // 1초 무적
+    
+    if (playerHp <= 0) {
+        alert("용병이 쓰러졌습니다! 후퇴합니다.");
+        exitDungeon();
     }
 }
 
@@ -225,7 +270,6 @@ function showDmgText(x, y, dmg) {
 }
 
 function showGoldText(x, y, val) {
-    playSfx('merge');
     const worldDiv = document.getElementById('battle-world');
     const txt = document.createElement('div');
     txt.className = 'gold-text'; txt.innerText = `💰+${fNum(val)}`;
@@ -250,7 +294,7 @@ function showResultModal() {
     document.getElementById('dungeon-result-modal').style.display = 'flex';
     document.getElementById('result-title').innerText = `${TOOTH_DATA.dungeons[currentDungeonIdx]} CLEAR!`;
     const next = TOOTH_DATA.dungeons[currentDungeonIdx + 1];
-    document.getElementById('result-desc').innerText = next ? `다음: ${next}` : "정복 완료!";
+    document.getElementById('result-desc').innerText = next ? `다음: ${next} 오픈!` : "정복 완료!";
     if (unlockedDungeon <= currentDungeonIdx + 1) unlockedDungeon = currentDungeonIdx + 2;
     saveGame();
 }
@@ -297,7 +341,13 @@ function setupJoystick() {
         const touch = e.changedTouches ? Array.from(e.changedTouches).find(t => t.identifier === touchId) : e;
         if (touch) updateKnob(touch.clientX, touch.clientY);
     };
-    const handleEnd = (e) => { e.preventDefault(); joystickActive = false; moveX = 0; moveY = 0; knob.style.transform = `translate(-50%, -50%)`; knob.style.left = '50%'; knob.style.top = '50%'; };
+    const handleEnd = (e) => { 
+        e.preventDefault(); 
+        joystickActive = false; 
+        moveX = 0; moveY = 0; 
+        knob.style.transform = `translate(-50%, -50%)`; 
+        knob.style.left = '50%'; knob.style.top = '50%'; 
+    };
     
     const updateKnob = (cx, cy) => {
         const rect = zone.getBoundingClientRect();
