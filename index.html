@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v2.4.0</title>
-    <link rel="stylesheet" href="style.css?v=2.4.0">
+    <title>치아 연대기 v3.0.0</title>
+    <link rel="stylesheet" href="style.css?v=3.0.0">
 </head>
 <body>
     <div id="game-container">
@@ -81,23 +81,33 @@
     </div>
 
     <div id="battle-screen">
-        <div id="battle-map">
+        <div id="battle-camera">
+            <div id="battle-world">
+                <div id="player">👨‍🌾</div>
+                </div>
+        </div>
+        
+        <div id="battle-ui-layer">
             <div id="battle-header">
                 <span id="current-dungeon-name">던전 이름</span><br>
                 <span id="wave-info">WAVE 1/5</span>
             </div>
-            <div id="player">👨‍🌾</div>
-            <div id="enemy-spawn-area"></div>
+            
             <button onclick="exitDungeon()" class="btn-exit">후퇴</button>
+            
+            <div id="war-weapon-slots"></div>
+            
+            <div id="joystick-zone">
+                <div id="joystick-knob"></div>
+            </div>
         </div>
-        <div id="war-weapon-slots"></div>
     </div>
 
     <div id="drag-proxy"></div>
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=2.4.0"></script>
-    <script src="battle.js?v=2.4.0"></script>
-    <script src="script.js?v=2.4.0"></script>
+    <script src="data.js?v=3.0.0"></script>
+    <script src="battle.js?v=3.0.0"></script>
+    <script src="script.js?v=3.0.0"></script>
 </body>
 </html>
