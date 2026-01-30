@@ -1,18 +1,18 @@
-// Version: 3.3.0 - Mercenary HP & Dungeon Info
+// Version: 3.4.0 - Pickaxe Luck & Sound Logic
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
+    // 곡괭이: power(속도) 제거 -> baseLv(기본레벨) 및 luck(상위티어확률) 위주
     pickaxes: [
-        { name: "허름한 나무 곡괭이", cost: 0, power: 10, mineLv: 1, greatChance: 0.01, icon: "🪵" },
-        { name: "무딘 구리 곡괭이", cost: 1000, power: 18, mineLv: 1, greatChance: 0.03, icon: "🪨" },
-        { name: "튼튼한 철 곡괭이", cost: 5000, power: 28, mineLv: 2, greatChance: 0.05, icon: "⛏️" },
-        { name: "연마된 강철 곡괭이", cost: 25000, power: 45, mineLv: 2, greatChance: 0.08, icon: "⚔️" },
-        { name: "빛나는 황금 곡괭이", cost: 100000, power: 70, mineLv: 2, greatChance: 0.12, icon: "⚜️" },
-        { name: "고강도 티타늄 곡괭이", cost: 500000, power: 110, mineLv: 3, greatChance: 0.15, icon: "💠" },
-        { name: "영롱한 다이아 곡괭이", cost: 2000000, power: 180, mineLv: 3, greatChance: 0.20, icon: "💎" },
-        { name: "카본 초합금 곡괭이", cost: 10000000, power: 300, mineLv: 4, greatChance: 0.25, icon: "🔮" },
-        { name: "신화의 오리할콘 곡괭이", cost: 50000000, power: 500, mineLv: 4, greatChance: 0.35, icon: "👑" }
+        { name: "허름한 나무 곡괭이", cost: 0, baseLv: 1, luck: 0.05, icon: "🪵" },
+        { name: "무딘 구리 곡괭이", cost: 1000, baseLv: 1, luck: 0.15, icon: "🪨" }, // 1~2렙
+        { name: "튼튼한 철 곡괭이", cost: 5000, baseLv: 2, luck: 0.20, icon: "⛏️" }, // 2~3렙
+        { name: "연마된 강철 곡괭이", cost: 25000, baseLv: 2, luck: 0.35, icon: "⚔️" },
+        { name: "빛나는 황금 곡괭이", cost: 100000, baseLv: 3, luck: 0.40, icon: "⚜️" },
+        { name: "고강도 티타늄 곡괭이", cost: 500000, baseLv: 3, luck: 0.55, icon: "💠" },
+        { name: "영롱한 다이아 곡괭이", cost: 2000000, baseLv: 4, luck: 0.60, icon: "💎" },
+        { name: "카본 초합금 곡괭이", cost: 10000000, baseLv: 4, luck: 0.75, icon: "🔮" },
+        { name: "신화의 오리할콘 곡괭이", cost: 50000000, baseLv: 5, luck: 0.80, icon: "👑" }
     ],
-    // 용병 데이터 (baseHp 추가)
     mercenaries: [
         { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, baseHp: 100, spd: 1.0, icon: "👨‍🌾" },
         { id: 1, name: "마을 경비병", cost: 5000, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
@@ -45,7 +45,7 @@ const TOOTH_DATA = {
     invExpansion: [5000, 50000, 500000, 5000000]
 };
 
-// Web Audio API (기존 유지)
+// Web Audio API
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration, vol = 0.1) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -61,6 +61,7 @@ function playTone(freq, type, duration, vol = 0.1) {
     osc.stop(audioCtx.currentTime + duration);
 }
 
+// playSfx는 script.js에서 오버라이드하여 탭별 소리 제어함
 function playSfx(name) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
     switch (name) {
@@ -70,7 +71,7 @@ function playSfx(name) {
         case 'attack': playTone(800, 'sawtooth', 0.05, 0.05); break;
         case 'hit': playTone(100, 'noise', 0.05, 0.1); break;
         case 'upgrade': playTone(600, 'square', 0.1, 0.1); setTimeout(() => playTone(900, 'square', 0.1, 0.1), 100); break;
-        case 'damage': playTone(80, 'sawtooth', 0.2, 0.2); break; // 피격음
+        case 'damage': playTone(80, 'sawtooth', 0.2, 0.2); break;
     }
 }
 
