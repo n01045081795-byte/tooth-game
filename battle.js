@@ -1,4 +1,4 @@
-// Version: 3.2.0 - Joystick Fix
+// Version: 3.2.0 - Joystick & Movement Fix
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -53,7 +53,7 @@ function startDungeon(idx) {
     
     spawnWave();
     
-    // 조이스틱 리스너는 한 번만 등록 (중복 방지)
+    // 조이스틱 리스너 중복 방지
     if (!window.joystickInitialized) {
         setupJoystick();
         window.joystickInitialized = true;
@@ -111,10 +111,9 @@ function battleLoop() {
 }
 
 function updatePlayerMovement() {
-    // 8방향 이동 (애니메이션 제거, 즉각 반응)
     if (moveX === 0 && moveY === 0) return;
     
-    const speed = 5 * currentMercenary.spd; // 속도 상향
+    const speed = 5 * currentMercenary.spd; 
     playerX += moveX * speed;
     playerY += moveY * speed;
     playerX = Math.max(20, Math.min(worldWidth - 20, playerX));
@@ -133,7 +132,7 @@ function updateCamera() {
 }
 
 function updateCombat() {
-    // 적 이동 (AI 수정)
+    // 적 이동 (AI 수정: 플레이어를 향해 멈추지 않고 이동)
     enemies.forEach(en => {
         const dx = playerX - en.x;
         const dy = playerY - en.y;
@@ -180,7 +179,7 @@ function updateCombat() {
 
         for (let j = enemies.length - 1; j >= 0; j--) {
             const en = enemies[j];
-            if (Math.hypot(m.x - en.x, m.y - en.y) < 40) { // 히트박스 확대
+            if (Math.hypot(m.x - en.x, m.y - en.y) < 40) { 
                 en.hp -= m.dmg;
                 en.hpFill.style.width = Math.max(0, (en.hp / en.maxHp * 100)) + '%';
                 showDmgText(en.x, en.y, m.dmg);
