@@ -1,4 +1,4 @@
-// Version: 3.3.0 - Movement Fix & HP System
+// Version: 3.4.0 - Stable Battle
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -43,9 +43,9 @@ function startDungeon(idx) {
     
     updateMercenary();
     
-    // 플레이어 DOM 생성 (HP바 포함)
+    // 플레이어 DOM 생성
     let playerEl = document.getElementById('player');
-    if (playerEl) playerEl.remove(); // 기존 제거 후 재생성
+    if (playerEl) playerEl.remove();
     playerEl = document.createElement('div');
     playerEl.id = 'player';
     playerEl.innerHTML = `
@@ -128,7 +128,6 @@ function battleLoop() {
 }
 
 function updatePlayerMovement() {
-    // 조이스틱 데이터 확인 후 이동
     if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return;
     
     const speed = 5 * (currentMercenary.spd || 1.0); 
@@ -150,7 +149,7 @@ function updateCamera() {
 }
 
 function updateCombat() {
-    // 1. 적 이동 및 플레이어 충돌 처리
+    // 1. 적 이동 및 플레이어 충돌
     enemies.forEach(en => {
         const dx = playerX - en.x;
         const dy = playerY - en.y;
@@ -161,7 +160,6 @@ function updateCombat() {
         en.el.style.left = en.x + 'px';
         en.el.style.top = en.y + 'px';
         
-        // 플레이어와 충돌 (거리 30 이내)
         if (!isInvincible && Math.hypot(playerX - en.x, playerY - en.y) < 30) {
             takeDamage(10 + (currentDungeonIdx * 5));
         }
@@ -228,20 +226,11 @@ function takeDamage(amount) {
     playerHp -= amount;
     updatePlayerHpBar();
     playSfx('damage');
-    
-    // 무적 처리
     isInvincible = true;
     const p = document.getElementById('player');
     p.classList.add('invincible');
-    setTimeout(() => {
-        isInvincible = false;
-        p.classList.remove('invincible');
-    }, 1000); // 1초 무적
-    
-    if (playerHp <= 0) {
-        alert("용병이 쓰러졌습니다! 후퇴합니다.");
-        exitDungeon();
-    }
+    setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000);
+    if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); }
 }
 
 function shoot(slotIdx, target) {
@@ -341,13 +330,7 @@ function setupJoystick() {
         const touch = e.changedTouches ? Array.from(e.changedTouches).find(t => t.identifier === touchId) : e;
         if (touch) updateKnob(touch.clientX, touch.clientY);
     };
-    const handleEnd = (e) => { 
-        e.preventDefault(); 
-        joystickActive = false; 
-        moveX = 0; moveY = 0; 
-        knob.style.transform = `translate(-50%, -50%)`; 
-        knob.style.left = '50%'; knob.style.top = '50%'; 
-    };
+    const handleEnd = (e) => { e.preventDefault(); joystickActive = false; moveX = 0; moveY = 0; knob.style.transform = `translate(-50%, -50%)`; knob.style.left = '50%'; knob.style.top = '50%'; };
     
     const updateKnob = (cx, cy) => {
         const rect = zone.getBoundingClientRect();
