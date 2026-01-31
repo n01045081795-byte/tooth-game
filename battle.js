@@ -1,7 +1,7 @@
-// Version: 5.1.0 - Boss Z-Index Fix & Smart Relay Logic
+// Version: 5.5.0 - FPS Limit & Hold Logic
 let enemies = [];
 let missiles = [];
-let weaponCD = new Array(8).fill(0); // 호환성 유지용
+let weaponCD = new Array(8).fill(0);
 let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
@@ -9,10 +9,14 @@ let dungeonActive = false;
 let dungeonGoldEarned = 0;
 let spawnTimeouts = []; 
 
-// 릴레이 시스템 변수
 let activeSlotIndex = 0; 
 let relayTimer = 0;      
 let bossDead = false; 
+
+// ★ FPS 제한 변수 ★
+let lastFrameTime = 0;
+const FPS = 60;
+const frameInterval = 1000 / FPS;
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -29,10 +33,10 @@ function startDungeon(idx) {
     enemies = []; missiles = []; dungeonActive = true;
     dungeonGoldEarned = 0;
     
-    // 초기화
     activeSlotIndex = 0;
     relayTimer = 0;
     bossDead = false;
+    lastFrameTime = performance.now();
     
     spawnTimeouts.forEach(id => clearTimeout(id));
     spawnTimeouts = [];
@@ -90,20 +94,34 @@ function spawnEnemy(isBoss = false) {
     const angle = Math.random() * Math.PI * 2;
     const dist = Math.min(worldWidth, worldHeight) / 2 - 50;
     let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist;
-    const baseHp = 100 * Math.pow(2.5, currentDungeonIdx);
+    // 난이도 완화 (2.5 -> 2.2)
+    const baseHp = Math.floor(100 * Math.pow(2.2, currentDungeonIdx));
     const maxHp = baseHp * (isBoss ? 30 : 1);
     en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`;
     en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); 
     enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp });
 }
 
-function battleLoop() { if (!dungeonActive) return; updatePlayerMovement(); updateCamera(); updateCombat(); requestAnimationFrame(battleLoop); }
+// ★ FPS 제한 적용 루프 ★
+function battleLoop(timestamp) { 
+    if (!dungeonActive) return; 
+    requestAnimationFrame(battleLoop); 
+
+    const elapsed = timestamp - lastFrameTime;
+    if (elapsed > frameInterval) {
+        lastFrameTime = timestamp - (elapsed % frameInterval);
+        
+        updatePlayerMovement(); 
+        updateCamera(); 
+        updateCombat(); 
+    }
+}
+
 function updatePlayerMovement() { if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return; const speed = 5 * (currentMercenary.spd || 1.0); playerX += moveX * speed; playerY += moveY * speed; playerX = Math.max(20, Math.min(worldWidth - 20, playerX)); playerY = Math.max(20, Math.min(worldHeight - 20, playerY)); updatePlayerPos(); const char = document.getElementById('player-char'); if(char) char.style.transform = moveX < 0 ? 'scaleX(-1)' : 'scaleX(1)'; }
 function updateCamera() { const camX = playerX - window.innerWidth / 2; const camY = playerY - window.innerHeight / 2; document.getElementById('battle-world').style.transform = `translate(${-camX}px, ${-camY}px)`; }
 function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
-    // 1. 적 이동
     if (!bossDead) {
         enemies.forEach(en => {
             const dx = playerX - en.x; const dy = playerY - en.y;
@@ -118,18 +136,13 @@ function updateCombat() {
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => { const d = Math.hypot(playerX - en.x, playerY - en.y); if (d < minDst) { minDst = d; nearest = en; } });
     
-    // ★ 릴레이 발사 로직 개선 ★
-    
-    // 기본 60프레임(1초) ~ 만렙(90%감소) 시 6프레임(0.1초)
     const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
     const maxCD = Math.max(6, 60 * (1 - cdReductionPercent/100));
 
-    // 쿨타임 증가 (최대치까지만)
     if (relayTimer < maxCD) {
         relayTimer++;
     }
     
-    // UI 업데이트
     for(let i=0; i<8; i++) {
         const slotEl = document.getElementById(`war-slot-${i}`);
         if(slotEl) {
@@ -139,7 +152,7 @@ function updateCombat() {
                 mask.style.height = `${Math.max(0, percent)}%`;
                 slotEl.style.border = '2px solid #00fbff';
                 if(relayTimer >= maxCD) {
-                    slotEl.style.background = 'rgba(0, 255, 0, 0.2)'; // 준비 완료 시각효과
+                    slotEl.style.background = 'rgba(0, 255, 0, 0.2)'; 
                 } else {
                     slotEl.style.background = '#1a1a2e';
                 }
@@ -151,34 +164,26 @@ function updateCombat() {
         }
     }
 
-    // 발사 조건 체크
     if (relayTimer >= maxCD) {
-        // 1. 빈 슬롯인가? -> 페널티 받고 턴 넘기기
         if (inventory[activeSlotIndex] === 0) {
             relayTimer = 0;
             activeSlotIndex = (activeSlotIndex + 1) % 8;
         } 
-        // 2. 치아가 있는가?
         else {
-            // 적이 있고, 사거리 내인가?
             if (nearest && !bossDead) {
                 const maxRngLimit = worldWidth / 2;
                 const calcRng = 300 + (globalUpgrades.rng * 20);
                 const range = Math.min(maxRngLimit, calcRng);
                 
                 if (minDst <= range) {
-                    // 발사 성공! -> 턴 넘기기
                     shoot(activeSlotIndex, nearest);
                     relayTimer = 0;
                     activeSlotIndex = (activeSlotIndex + 1) % 8;
                 }
-                // 사거리 밖이면? -> 아무것도 안함 (relayTimer 유지, activeSlotIndex 유지) == 대기
             }
-            // 적이 아예 없으면? -> 대기
         }
     }
 
-    // 3. 미사일 처리
     for (let i = missiles.length - 1; i >= 0; i--) {
         const m = missiles[i];
         m.x += m.vx; m.y += m.vy;
@@ -230,18 +235,17 @@ function createExplosion(x, y) {
     exp.style.left = x + 'px'; exp.style.top = y + 'px';
     exp.style.transform = 'translate(-50%, -50%)';
     exp.style.fontSize = '150px';
-    exp.style.zIndex = '20000'; // 폭발도 최상위
+    exp.style.zIndex = '20000';
     exp.style.textShadow = '0 0 20px red';
     exp.style.animation = 'popUp 1s ease-out';
     worldDiv.appendChild(exp);
     setTimeout(() => exp.remove(), 1000);
 }
 
-// ★ 보스 클리어 모달: Z-Index 강제 상향 ★
 function showResultModal() {
     const modal = document.getElementById('dungeon-result-modal');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999'; // 전투 화면(9999)보다 훨씬 높게 설정
+    modal.style.zIndex = '99999'; 
     
     document.getElementById('result-title').innerText = `${TOOTH_DATA.dungeons[currentDungeonIdx]} CLEAR!`;
     const next = TOOTH_DATA.dungeons[currentDungeonIdx + 1];
