@@ -1,4 +1,4 @@
-// Version: 3.8.2 - Mercenary UI & Fix
+// Version: 3.9.0 - Global Refine & Boss Clear Logic
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -14,7 +14,10 @@ let ownedMercenaries = [0];
 let mergeProgress = 0;
 let autoMergeSpeedLevel = 1; 
 let isMuted = false;
+// 슬롯별 공격력은 유지, cd/rng는 사용하지 않지만 호환성을 위해 구조 유지
 let slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
+// ★ 신규: 글로벌 업그레이드 (쿨타임, 사거리)
+let globalUpgrades = { cd: 0, rng: 0 };
 
 const dragProxy = document.getElementById('drag-proxy');
 let lastTapTime = 0; let lastTapIdx = -1;
@@ -26,15 +29,21 @@ function saveGame() {
     const data = { 
         gold, maxSlots, inventory, unlockedDungeon, pickaxeIdx, autoMineLevel,
         mercenaryIdx, ownedMercenaries, autoMergeSpeedLevel, isMuted,
-        slotUpgrades, lastTime: Date.now(), isMiningPaused 
+        slotUpgrades, globalUpgrades, lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV380', JSON.stringify(data));
+    localStorage.setItem('toothSaveV390', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV380');
-    if (saved) {
-        const d = JSON.parse(saved);
+    const saved = localStorage.getItem('toothSaveV390');
+    // 하위 호환성 (V380 데이터 로드 시도)
+    const legacy = localStorage.getItem('toothSaveV380');
+    
+    let d = null;
+    if (saved) d = JSON.parse(saved);
+    else if (legacy) d = JSON.parse(legacy);
+
+    if (d) {
         gold = d.gold !== undefined ? d.gold : 0; 
         maxSlots = d.maxSlots || 24; 
         inventory = d.inventory || new Array(56).fill(0);
@@ -45,11 +54,9 @@ function loadGame() {
         autoMergeSpeedLevel = d.autoMergeSpeedLevel || 1;
         isMuted = d.isMuted || false;
         
-        if (d.slotUpgrades && Array.isArray(d.slotUpgrades) && d.slotUpgrades.length === 8) {
-            slotUpgrades = d.slotUpgrades;
-        } else {
-            slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
-        }
+        if (d.slotUpgrades && Array.isArray(d.slotUpgrades)) slotUpgrades = d.slotUpgrades;
+        // 글로벌 업그레이드 로드
+        if (d.globalUpgrades) globalUpgrades = d.globalUpgrades;
         
         if (!isMiningPaused && d.lastTime) {
             const offTime = (Date.now() - d.lastTime) / 1000;
@@ -171,43 +178,69 @@ function buyItem(type, cost) {
     } else { alert("골드가 부족합니다!"); }
 }
 
+// ★ 제련 탭 UI 개편: 글로벌 업그레이드 및 개별 공격력 ★
 function renderRefineView() {
     const grid = document.getElementById('refine-grid');
     if (!grid) return;
-    grid.innerHTML = '';
+    
+    // 1. 글로벌 업그레이드 패널 (상단에 추가)
+    const costGlobalCd = Math.floor(5000 * Math.pow(1.5, globalUpgrades.cd));
+    const costGlobalRng = Math.floor(3000 * Math.pow(1.5, globalUpgrades.rng));
+    
+    // 쿨타임: 레벨당 2% 감소, 최대 80% (Lv.40)
+    const curCdReduc = Math.min(80, globalUpgrades.cd * 2);
+    const nextCdReduc = Math.min(80, (globalUpgrades.cd + 1) * 2);
+    
+    // 사거리: 레벨당 증가
+    const curRngVal = globalUpgrades.rng;
+    
+    let html = `
+    <div style="grid-column: 1 / -1; background: #222; padding: 10px; border-radius: 8px; border: 2px solid var(--gold); margin-bottom: 15px;">
+        <h4 style="margin:0 0 10px 0; color:var(--gold); text-align:center;">🌍 전체 슬롯 동시 강화</h4>
+        <div style="display:flex; gap:10px;">
+            <button onclick="upgradeGlobal('cd', ${costGlobalCd})" class="btn-sm" style="flex:1; height:60px; background:#34495e;">
+                ⏳ 전체 쿨타임 Lv.${globalUpgrades.cd}<br>
+                <span style="color:#2ecc71;">-${curCdReduc}% ➔ -${nextCdReduc}%</span><br>
+                💰 ${fNum(costGlobalCd)}
+            </button>
+            <button onclick="upgradeGlobal('rng', ${costGlobalRng})" class="btn-sm" style="flex:1; height:60px; background:#34495e;">
+                🏹 전체 사거리 Lv.${globalUpgrades.rng}<br>
+                <span style="color:#2ecc71;">Lv.${curRngVal} ➔ Lv.${curRngVal+1}</span><br>
+                💰 ${fNum(costGlobalRng)}
+            </button>
+        </div>
+    </div>
+    `;
+    
+    // 2. 개별 슬롯 공격력 강화
     slotUpgrades.forEach((slot, idx) => {
-        const card = document.createElement('div');
-        card.className = 'refine-card';
         const costAtk = Math.floor(1000 * Math.pow(1.3, slot.atk));
-        const costCd = Math.floor(1500 * Math.pow(1.3, slot.cd));
-        const costRng = Math.floor(800 * Math.pow(1.3, slot.rng));
-        
         const curAtk = (1 + slot.atk * 0.1).toFixed(1);
         const nextAtk = (1 + (slot.atk+1) * 0.1).toFixed(1);
-        
-        const curCd = (slot.cd * 5);
-        const nextCd = ((slot.cd+1) * 5);
-        
-        const curRng = (slot.rng * 20);
-        const nextRng = ((slot.rng+1) * 20);
 
-        card.innerHTML = `
+        html += `
+        <div class="refine-card">
             <div class="refine-header">🔥 슬롯 #${idx+1}</div>
-            <div class="refine-btn" onclick="upgradeSlot(${idx}, 'atk', ${costAtk})">
-                <span>⚔️ 공격력 Lv.${slot.atk} <span class="refine-val">(x${curAtk} ➔ x${nextAtk})</span></span>
-                <span>💰${fNum(costAtk)}</span>
+            <div class="refine-btn" onclick="upgradeSlot(${idx}, 'atk', ${costAtk})" style="height:100%;">
+                <span>⚔️ 공격력 Lv.${slot.atk}</span>
+                <span class="refine-val" style="font-size:12px;">(x${curAtk} ➔ x${nextAtk})</span>
+                <span style="margin-top:5px;">💰${fNum(costAtk)}</span>
             </div>
-            <div class="refine-btn" onclick="upgradeSlot(${idx}, 'cd', ${costCd})">
-                <span>⏳ 쿨타임 Lv.${slot.cd} <span class="refine-val">(-${curCd}% ➔ -${nextCd}%)</span></span>
-                <span>💰${fNum(costCd)}</span>
-            </div>
-            <div class="refine-btn" onclick="upgradeSlot(${idx}, 'rng', ${costRng})">
-                <span>🏹 사거리 Lv.${slot.rng} <span class="refine-val">(+${curRng} ➔ +${nextRng})</span></span>
-                <span>💰${fNum(costRng)}</span>
-            </div>
+        </div>
         `;
-        grid.appendChild(card);
     });
+    
+    grid.innerHTML = html;
+}
+
+function upgradeGlobal(type, cost) {
+    if (gold >= cost) {
+        gold -= cost;
+        globalUpgrades[type]++;
+        playSfx('upgrade');
+        renderRefineView();
+        updateUI();
+    } else { alert("골드가 부족합니다!"); }
 }
 
 function upgradeSlot(idx, type, cost) {
@@ -234,12 +267,55 @@ function triggerGreatSuccess(idx) { playSfx('great'); const slot = document.getE
 function updatePickaxeVisual() { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; document.getElementById('miner-char').innerText = pick.icon || "⛏️"; }
 function createHitEffect(x, y) { const effect = document.createElement('div'); effect.className = 'hit-effect'; effect.innerText = "💥"; effect.style.left = x + 'px'; effect.style.top = y + 'px'; document.body.appendChild(effect); setTimeout(() => effect.remove(), 400); }
 function setupMiningTouch() { const mineArea = document.getElementById('mine-rock-area'); mineArea.addEventListener('pointerdown', (e) => { e.preventDefault(); const miner = document.getElementById('miner-char'); miner.style.animation = 'none'; miner.offsetHeight; miner.style.animation = 'hammer 0.08s ease-in-out'; playSfx('mine'); processMining(15); createHitEffect(e.clientX, e.clientY); }); }
-function checkCoupon() { const code = document.getElementById('coupon-input').value.trim(); if (code === "100b" || code === "RICH100B") { gold += 100000000000; alert("치트키 적용!"); updateUI(); } else { alert("유효하지 않은 쿠폰입니다."); } }
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV380'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV380', decoded); location.reload(); } catch (e) { alert("오류"); } } }
-function renderDungeonList() { const list = document.getElementById('dungeon-list'); list.innerHTML = ''; TOOTH_DATA.dungeons.forEach((name, idx) => { const div = document.createElement('div'); const isUnlocked = idx < unlockedDungeon; div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; if (isUnlocked) { div.innerHTML = `<h4>⚔️ Lv.${idx+1} ${name}</h4><p>권장 공격력: Lv.${idx+1}0+</p><p style="color:#f1c40f; font-size:10px;">클리어 시: Lv.${idx+2} 치아 확정 채굴</p>`; div.onclick = () => startDungeon(idx); } else { div.innerHTML = `<h4>🔒 잠김</h4><p>이전 던전 클리어 시 열림</p>`; } list.appendChild(div); }); }
 
-// ★ 용병 UI 개선: HP 표시 및 상태별 버튼 색상/텍스트 분기 ★
+// ★ 쿠폰 추가 (리셋, 100f) ★
+function checkCoupon() { 
+    const code = document.getElementById('coupon-input').value.trim(); 
+    if (code === "100b" || code === "RICH100B") { 
+        gold += 100000000000; 
+        alert("치트키 적용!"); updateUI(); 
+    } 
+    else if (code === "100f" || code === "RICH100F") {
+        gold += 100000000000000000000; // 100 * 10^18
+        alert("슈퍼 리치 모드!"); updateUI();
+    }
+    else if (code === "RESET") {
+        if(confirm("정말 초기화 하시겠습니까?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+    else { alert("유효하지 않은 쿠폰입니다."); } 
+}
+
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV390'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV390', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+
+// ★ 던전 리스트: 권장 공격력 표시로 변경 (보스 40대 기준) ★
+function renderDungeonList() { 
+    const list = document.getElementById('dungeon-list'); 
+    list.innerHTML = ''; 
+    TOOTH_DATA.dungeons.forEach((name, idx) => { 
+        const div = document.createElement('div'); 
+        const isUnlocked = idx < unlockedDungeon; 
+        div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; 
+        
+        // 보스 HP 계산 (battle.js 공식 참조)
+        const baseHp = 100 * Math.pow(2.5, idx);
+        const bossHp = baseHp * 30;
+        // 권장 공격력 = 보스 HP / 40
+        const recAtk = bossHp / 40;
+
+        if (isUnlocked) { 
+            div.innerHTML = `<h4>⚔️ Lv.${idx+1} ${name}</h4><p>권장 공격력: ${fNum(recAtk)}+</p><p style="color:#f1c40f; font-size:10px;">클리어 시: Lv.${idx+2} 치아 확정 채굴</p>`; 
+            div.onclick = () => startDungeon(idx); 
+        } else { 
+            div.innerHTML = `<h4>🔒 잠김</h4><p>이전 던전 클리어 시 열림</p>`; 
+        } 
+        list.appendChild(div); 
+    }); 
+}
+
 function renderMercenaryCamp() { 
     const camp = document.getElementById('mercenary-list'); 
     camp.innerHTML = ''; 
@@ -258,17 +334,14 @@ function renderMercenaryCamp() {
             <div style="font-size:12px; font-weight:bold;">${merc.name}</div>
             <div style="font-size:10px; color:#aaa;">공격 x${merc.atkMul}</div>
             <div style="font-size:10px; color:#f55;">HP ${fNum(merc.baseHp)}</div> 
-        `; // HP 표시 추가
+        `; 
         
         if (isEquipped) {
-            // 고용중: 초록색, 클릭 불가
             div.style.border = '2px solid #2ecc71'; 
             div.innerHTML += `<button class="btn-sm" style="background:#2ecc71; color:white; cursor:default;">고용중</button>`;
         } else if (isOwned) {
-            // 보유중(대기): 회색
             div.innerHTML += `<button onclick="equipMerc(${merc.id})" class="btn-sm" style="background:#777;">대기중</button>`; 
         } else {
-            // 미보유: 골드 버튼
             div.innerHTML += `<button onclick="buyMerc(${merc.id}, ${merc.cost})" class="btn-gold" style="padding:2px 5px; font-size:10px;">${fNum(merc.cost)}G</button>`; 
         }
         
