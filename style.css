@@ -1,4 +1,4 @@
-/* Version: 5.5.0 - Guide & Locked Refine */
+/* Version: 6.0.0 - Dungeon Themes */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
@@ -42,14 +42,9 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .refine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
 .refine-card { background: #222; border: 1px solid var(--gold); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
 .refine-header { font-size: 12px; font-weight: bold; color: var(--gold); text-align: center; margin-bottom: 5px; }
-.refine-btn { 
-    background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 8px 6px; 
-    font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center;
-}
+.refine-btn { background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 8px 6px; font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; }
 .refine-btn:active { background: #444; }
 .refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; } 
-
-/* 잠긴 제련 슬롯 스타일 */
 .locked-refine { opacity: 0.5; pointer-events: none; filter: grayscale(1); border-color: #555; }
 .locked-refine .refine-header { color: #888; }
 
@@ -70,30 +65,24 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .shiny-effect { animation: shine 0.5s ease-in-out; border: 2px solid var(--gold) !important; }
 @keyframes shine { 0% { background: #fff; transform: scale(1.2); } 100% { background: #1a1a2e; transform: scale(1); } }
 #drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
-
-/* 버튼 스타일 */
 .btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; } 
-
 .btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
 .btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
 .btn-exit { position: absolute; top: 15px; right: 15px; background: var(--red); color: white; padding: 8px 15px; border-radius: 6px; border: none; pointer-events: auto; font-weight: bold; z-index: 2000; }
 
-/* 상점 */
-#shop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+/* 상점 & 모달 */
+#shop-modal, #guide-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
 #shop-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; }
 .shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; border: 1px solid #444; }
 .shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
 .shop-desc { font-size: 11px; color: #ddd; text-align: left; width: 100%; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
-
-/* 가이드 모달 */
-#guide-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; justify-content: center; align-items: center; }
 #guide-content { background: #222; width: 90%; max-height: 80vh; padding: 25px; border-radius: 15px; border: 2px solid #3498db; color: white; display: flex; flex-direction: column; }
 .guide-scroll { overflow-y: auto; flex-grow: 1; font-size: 13px; line-height: 1.6; text-align: left; }
 .guide-scroll h3 { color: #3498db; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 20px; }
 
-/* 던전 관련 */
+/* 던전 탭 */
 #war-view { display: none; flex-direction: column; height: 100%; }
 #mercenary-camp { background: #222; padding: 10px; border-bottom: 1px solid #444; flex-shrink: 0; display: block; }
 #mercenary-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; min-height: 100px; }
@@ -103,10 +92,26 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .dungeon-card.unlocked { border-left: 5px solid var(--red); background: #2c4a70; cursor: pointer; }
 .dungeon-card.locked { opacity: 0.6; filter: grayscale(1); }
 
-/* 전투 화면 */
+/* ★ 전투 화면 및 배경 테마 ★ */
 #battle-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 9999; display: none; overflow: hidden; }
 #battle-camera { width: 100%; height: 100%; position: relative; overflow: hidden; }
-#battle-world { width: 200vw; height: 200vh; position: absolute; left: 0; top: 0; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 40px 40px; background-color: #111; transform-origin: 0 0; }
+#battle-world { width: 200vw; height: 200vh; position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+/* 배경 패턴 정의 */
+.bg-grass { background-color: #2e8b57; background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 50px 50px; }
+.bg-stone { background-color: #34495e; background-image: radial-gradient(#2c3e50 15%, transparent 16%), radial-gradient(#2c3e50 15%, transparent 16%); background-size: 30px 30px; background-position: 0 0, 15px 15px; }
+.bg-water { background-color: #2980b9; background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px); }
+.bg-brick { background-color: #5d4037; background-image: linear-gradient(335deg, rgba(0,0,0,0.3) 23px, transparent 23px), linear-gradient(155deg, rgba(0,0,0,0.3) 23px, transparent 23px), linear-gradient(335deg, rgba(0,0,0,0.3) 23px, transparent 23px), linear-gradient(155deg, rgba(0,0,0,0.3) 23px, transparent 23px); background-size: 58px 58px; }
+.bg-ice { background-color: #a0d8ef; background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .3) 25%, rgba(255, 255, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, .3) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .3) 25%, rgba(255, 255, 255, .3) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .3) 75%, rgba(255, 255, 255, .3) 76%, transparent 77%, transparent); background-size: 50px 50px; }
+.bg-lava { background-color: #300; background-image: linear-gradient(45deg, #500 25%, transparent 25%, transparent 75%, #500 75%, #500), linear-gradient(45deg, #500 25%, transparent 25%, transparent 75%, #500 75%, #500); background-size: 40px 40px; background-position: 0 0, 20px 20px; }
+.bg-poison { background-color: #1a2f1a; background-image: radial-gradient(circle, #2ecc71 2px, transparent 2.5px); background-size: 20px 20px; }
+.bg-dark { background-color: #000; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.9; }
+.bg-fog { background-color: #555; background-image: linear-gradient(transparent 95%, rgba(255,255,255,0.2) 95%); background-size: 20px 20px; }
+.bg-sky { background-color: #87ceeb; background-image: radial-gradient(white 20%, transparent 20%); background-size: 60px 60px; background-position: 0 0; }
+.bg-space { background-color: #0d0d1a; background-image: radial-gradient(white 1px, transparent 1px), radial-gradient(rgba(255,255,255,0.5) 2px, transparent 2px); background-size: 50px 50px, 100px 100px; }
+.bg-chaos { background: conic-gradient(from 0deg, #222, #444, #222); background-size: 100px 100px; }
+.bg-tooth { background-color: #ffe; background-image: radial-gradient(#ddd 20%, transparent 20%); background-size: 30px 30px; }
+
 #player { position: absolute; font-size: 40px; transform: translate(-50%, -50%); z-index: 500; transition: none; display: flex; flex-direction: column; align-items: center; }
 .invincible { animation: blink 0.2s infinite; opacity: 0.5; }
 @keyframes blink { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
@@ -124,8 +129,6 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .cd-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(0, 0, 0, 0.7); z-index: 3; transition: height 0.1s linear; }
 .war-slot.ready { border: 2px solid var(--gold); box-shadow: 0 0 5px var(--gold); }
 #joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; pointer-events: auto; touch-action: none; }
-#joystick-zone::before { content: "▲"; position: absolute; top: 5px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 12px; }
-#joystick-zone::after { content: "▼"; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 12px; }
 #joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: var(--gold); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 10; }
 .hit-effect { position: fixed; pointer-events: none; z-index: 9999; font-size: 30px; font-weight: bold; color: white; text-shadow: 0 0 5px red; animation: fadeUp 0.4s forwards; }
 .dmg-text { position: absolute; color: yellow; font-weight: bold; font-size: 16px; animation: fadeUp 0.5s forwards; z-index: 900; text-shadow: 1px 1px 0 #000; }
