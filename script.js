@@ -1,5 +1,4 @@
-// script.js (전체 복사해서 덮어쓰세요)
-// Version: 3.8.1 - Mercenary UI & Fixes
+// Version: 3.8.2 - Mercenary UI & Fix
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -240,7 +239,7 @@ function exportSave() { saveGame(); const data = localStorage.getItem('toothSave
 function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV380', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 function renderDungeonList() { const list = document.getElementById('dungeon-list'); list.innerHTML = ''; TOOTH_DATA.dungeons.forEach((name, idx) => { const div = document.createElement('div'); const isUnlocked = idx < unlockedDungeon; div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; if (isUnlocked) { div.innerHTML = `<h4>⚔️ Lv.${idx+1} ${name}</h4><p>권장 공격력: Lv.${idx+1}0+</p><p style="color:#f1c40f; font-size:10px;">클리어 시: Lv.${idx+2} 치아 확정 채굴</p>`; div.onclick = () => startDungeon(idx); } else { div.innerHTML = `<h4>🔒 잠김</h4><p>이전 던전 클리어 시 열림</p>`; } list.appendChild(div); }); }
 
-// 용병 렌더링 수정: HP 표시 및 고용/장착 상태 구분
+// ★ 용병 UI 개선: HP 표시 및 상태별 버튼 색상/텍스트 분기 ★
 function renderMercenaryCamp() { 
     const camp = document.getElementById('mercenary-list'); 
     camp.innerHTML = ''; 
@@ -258,15 +257,18 @@ function renderMercenaryCamp() {
             <div style="font-size:25px;">${merc.icon}</div>
             <div style="font-size:12px; font-weight:bold;">${merc.name}</div>
             <div style="font-size:10px; color:#aaa;">공격 x${merc.atkMul}</div>
-            <div style="font-size:10px; color:#f55;">HP ${merc.baseHp}</div>
-        `; 
+            <div style="font-size:10px; color:#f55;">HP ${fNum(merc.baseHp)}</div> 
+        `; // HP 표시 추가
         
         if (isEquipped) {
+            // 고용중: 초록색, 클릭 불가
             div.style.border = '2px solid #2ecc71'; 
             div.innerHTML += `<button class="btn-sm" style="background:#2ecc71; color:white; cursor:default;">고용중</button>`;
         } else if (isOwned) {
+            // 보유중(대기): 회색
             div.innerHTML += `<button onclick="equipMerc(${merc.id})" class="btn-sm" style="background:#777;">대기중</button>`; 
         } else {
+            // 미보유: 골드 버튼
             div.innerHTML += `<button onclick="buyMerc(${merc.id}, ${merc.cost})" class="btn-gold" style="padding:2px 5px; font-size:10px;">${fNum(merc.cost)}G</button>`; 
         }
         
