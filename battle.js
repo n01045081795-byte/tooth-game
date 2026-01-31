@@ -1,4 +1,4 @@
-// Version: 3.8.0 - Single Boss & Instant Clear
+// Version: 3.9.0 - Boss Clear & Avatar Fix
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -6,7 +6,7 @@ let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
 let dungeonActive = false;
-let dungeonGoldEarned = 0; // 획득 골드 집계
+let dungeonGoldEarned = 0;
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -34,10 +34,14 @@ function startDungeon(idx) {
     document.getElementById('battle-screen').style.display = 'block';
     document.getElementById('current-dungeon-name').innerText = TOOTH_DATA.dungeons[idx];
     
+    // ★ 주인공 아바타 업데이트 (DOM 생성 전) ★
+    updateMercenary();
+    
     let playerEl = document.getElementById('player');
     if (playerEl) playerEl.remove();
     playerEl = document.createElement('div');
     playerEl.id = 'player';
+    // ★ 아이콘 적용 ★
     playerEl.innerHTML = `<div id="player-hp-bar-bg"><div id="player-hp-bar-fill"></div></div><div id="player-char">${currentMercenary.icon}</div>`;
     document.getElementById('battle-world').appendChild(playerEl);
     
@@ -48,40 +52,19 @@ function startDungeon(idx) {
     requestAnimationFrame(battleLoop);
 }
 
+// ... (기존 로직: updateMercenary, updatePlayerPos, etc.) ...
 function updateMercenary() { if (!TOOTH_DATA.mercenaries[mercenaryIdx]) mercenaryIdx = 0; currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx]; }
 function updatePlayerHpBar() { const fill = document.getElementById('player-hp-bar-fill'); if (fill) fill.style.width = (playerHp / playerMaxHp * 100) + '%'; }
 function updatePlayerPos() { const p = document.getElementById('player'); if(p) { p.style.left = playerX + 'px'; p.style.top = playerY + 'px'; } }
-
-function spawnWave() {
-    if (!dungeonActive) return;
-    document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`;
-    const count = isBossWave ? 1 : 5 + (currentWave * 2);
-    for (let i = 0; i < count; i++) {
-        setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 800);
-    }
-}
-
-function spawnEnemy(isBoss = false) {
-    const worldDiv = document.getElementById('battle-world');
-    const en = document.createElement('div');
-    en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy';
-    const angle = Math.random() * Math.PI * 2;
-    const dist = Math.min(worldWidth, worldHeight) / 2 - 50;
-    let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist;
-    const baseHp = 100 * Math.pow(2.5, currentDungeonIdx);
-    const maxHp = baseHp * (isBoss ? 30 : 1);
-    en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`;
-    en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); 
-    enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp });
-}
-
+function spawnWave() { if (!dungeonActive) return; document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`; const count = isBossWave ? 1 : 5 + (currentWave * 2); for (let i = 0; i < count; i++) { setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 800); } }
+function spawnEnemy(isBoss = false) { const worldDiv = document.getElementById('battle-world'); const en = document.createElement('div'); en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy'; const angle = Math.random() * Math.PI * 2; const dist = Math.min(worldWidth, worldHeight) / 2 - 50; let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist; const baseHp = 100 * Math.pow(2.5, currentDungeonIdx); const maxHp = baseHp * (isBoss ? 30 : 1); en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`; en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp }); }
 function battleLoop() { if (!dungeonActive) return; updatePlayerMovement(); updateCamera(); updateCombat(); requestAnimationFrame(battleLoop); }
 function updatePlayerMovement() { if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return; const speed = 5 * (currentMercenary.spd || 1.0); playerX += moveX * speed; playerY += moveY * speed; playerX = Math.max(20, Math.min(worldWidth - 20, playerX)); playerY = Math.max(20, Math.min(worldHeight - 20, playerY)); updatePlayerPos(); const char = document.getElementById('player-char'); if(char) char.style.transform = moveX < 0 ? 'scaleX(-1)' : 'scaleX(1)'; }
 function updateCamera() { const camX = playerX - window.innerWidth / 2; const camY = playerY - window.innerHeight / 2; document.getElementById('battle-world').style.transform = `translate(${-camX}px, ${-camY}px)`; }
 function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
-    // 1. 적 이동 및 충돌
+    // 1. 적 이동
     enemies.forEach(en => {
         const dx = playerX - en.x; const dy = playerY - en.y;
         const angle = Math.atan2(dy, dx);
@@ -110,7 +93,7 @@ function updateCombat() {
         }
     }
 
-    // 3. 미사일 충돌
+    // 3. 미사일
     for (let i = missiles.length - 1; i >= 0; i--) {
         const m = missiles[i];
         m.x += m.vx; m.y += m.vy;
@@ -137,6 +120,9 @@ function updateCombat() {
                         en.el.remove();
                         enemies.splice(j, 1);
                         dungeonActive = false; // 정지
+                        // 모든 적 제거
+                        enemies.forEach(e => e.el.remove()); enemies = [];
+                        missiles.forEach(m => m.el.remove()); missiles = [];
                         showResultModal();
                         return;
                     } else {
@@ -163,6 +149,7 @@ function showResultModal() {
     saveGame();
 }
 
+// ... (기타 함수들 유지) ...
 function shoot(slotIdx, target) { playSfx('attack'); const worldDiv = document.getElementById('battle-world'); const mEl = document.createElement('div'); mEl.className = 'missile'; mEl.innerHTML = getToothIcon(inventory[slotIdx]); worldDiv.appendChild(mEl); const angle = Math.atan2(target.y - playerY, target.x - playerX); const speed = 18; let refineMul = 1 + (slotUpgrades[slotIdx].atk * 0.1); const dmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul * refineMul; missiles.push({ el: mEl, x: playerX, y: playerY, startX: playerX, startY: playerY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, dmg: dmg }); }
 function showDmgText(x, y, dmg) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'dmg-text'; txt.innerText = fNum(dmg); txt.style.left = x + 'px'; txt.style.top = (y - 40) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 500); }
 function showGoldText(x, y, val) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'gold-text'; txt.innerText = `💰+${fNum(val)}`; txt.style.left = x + 'px'; txt.style.top = (y - 50) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 800); }
