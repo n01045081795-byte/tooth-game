@@ -1,4 +1,4 @@
-// Version: 6.0.0 - Full Dungeon Themes & Mobs
+// Version: 6.5.0 - Bot Names & Data
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
     pickaxes: [
@@ -41,7 +41,6 @@ const TOOTH_DATA = {
         "초월자의 시험장", "파멸의 잿더미", "영겁의 감시자 탑", "신의 영역: 입구", 
         "황혼의 그림자 성소", "우주 너머의 공허", "혼돈의 끝자락", "카오스 울트라 최종장"
     ],
-    // ★ 던전별 몬스터/보스/배경 테마 정보 ★
     dungeonMobs: [
         { theme: 'bg-grass', mobs: ['🍄','🐌','🐛'], boss: '🥦' }, // 1
         { theme: 'bg-stone', mobs: ['💀','🦴','🦇'], boss: '☠️' }, // 2
@@ -64,6 +63,8 @@ const TOOTH_DATA = {
         { theme: 'bg-chaos', mobs: ['🤡','🃏','🎭'], boss: '😈' }, // 19
         { theme: 'bg-tooth', mobs: ['🍬','🍫','🦠'], boss: '👑' }  // 20
     ],
+    // 가상 봇 이름 리스트 (10% 확률로 등장)
+    botNames: ["이빨요정", "치과무서워", "Driller", "Gold_Hunter", "사랑니", "임플란트", "충치균", "양치질", "스케일링", "치아왕", "강철턱", "GumGuard", "RootCanal", "MolarBear", "ToothHurty", "FlossBoss"],
     invExpansion: [2000, 20000, 200000, 2000000]
 };
 
