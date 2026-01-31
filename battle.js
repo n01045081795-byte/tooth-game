@@ -1,4 +1,4 @@
-// Version: 5.5.0 - FPS Limit & Hold Logic
+// Version: 6.0.0 - Themes & Mobs
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -12,8 +12,9 @@ let spawnTimeouts = [];
 let activeSlotIndex = 0; 
 let relayTimer = 0;      
 let bossDead = false; 
+let currentTheme = ''; // 현재 던전 테마 클래스
 
-// ★ FPS 제한 변수 ★
+// FPS 제한
 let lastFrameTime = 0;
 const FPS = 60;
 const frameInterval = 1000 / FPS;
@@ -51,6 +52,11 @@ function startDungeon(idx) {
     document.getElementById('battle-screen').style.display = 'block';
     document.getElementById('current-dungeon-name').innerText = TOOTH_DATA.dungeons[idx];
     
+    // ★ 배경 테마 적용 ★
+    const mobData = TOOTH_DATA.dungeonMobs[idx] || TOOTH_DATA.dungeonMobs[0];
+    currentTheme = mobData.theme;
+    document.getElementById('battle-world').className = currentTheme; 
+
     let playerEl = document.getElementById('player');
     if (playerEl) playerEl.remove();
     playerEl = document.createElement('div');
@@ -91,18 +97,29 @@ function spawnEnemy(isBoss = false) {
     const worldDiv = document.getElementById('battle-world');
     const en = document.createElement('div');
     en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy';
+    
+    // ★ 던전 고유 몬스터 적용 ★
+    const mobData = TOOTH_DATA.dungeonMobs[currentDungeonIdx] || TOOTH_DATA.dungeonMobs[0];
+    let icon = '';
+    if (isBoss) {
+        icon = mobData.boss;
+    } else {
+        // 일반 몬스터 랜덤 선택
+        const r = Math.floor(Math.random() * mobData.mobs.length);
+        icon = mobData.mobs[r];
+    }
+
     const angle = Math.random() * Math.PI * 2;
     const dist = Math.min(worldWidth, worldHeight) / 2 - 50;
     let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist;
-    // 난이도 완화 (2.5 -> 2.2)
     const baseHp = Math.floor(100 * Math.pow(2.2, currentDungeonIdx));
     const maxHp = baseHp * (isBoss ? 30 : 1);
-    en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`;
+    
+    en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${icon}</span>`;
     en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); 
     enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp });
 }
 
-// ★ FPS 제한 적용 루프 ★
 function battleLoop(timestamp) { 
     if (!dungeonActive) return; 
     requestAnimationFrame(battleLoop); 
