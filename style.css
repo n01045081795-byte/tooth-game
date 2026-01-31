@@ -1,4 +1,4 @@
-/* Version: 6.0.0 - Dungeon Themes */
+/* Version: 6.5.0 - Ranking & Nickname */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
@@ -48,9 +48,9 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .locked-refine { opacity: 0.5; pointer-events: none; filter: grayscale(1); border-color: #555; }
 .locked-refine .refine-header { color: #888; }
 
-/* 쿠폰창 */
+/* 쿠폰창 & 버튼 */
 #cheat-section { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #222; margin: 0; border-top: 1px solid #444; flex-shrink: 0; width: 100%; height: 50px; }
-.cheat-group-left { display: flex; gap: 5px; flex-grow: 1; margin-right: 10px; }
+.cheat-group-left { display: flex; gap: 5px; flex-grow: 1; margin-right: 5px; }
 .cheat-group-right { display: flex; gap: 5px; }
 #coupon-input { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; font-size: 11px; }
 
@@ -68,19 +68,28 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; } 
-.btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
+.btn-sm { padding: 6px 10px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
 .btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
 .btn-exit { position: absolute; top: 15px; right: 15px; background: var(--red); color: white; padding: 8px 15px; border-radius: 6px; border: none; pointer-events: auto; font-weight: bold; z-index: 2000; }
 
 /* 상점 & 모달 */
-#shop-modal, #guide-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-#shop-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; }
+#shop-modal, #guide-modal, #ranking-modal, #nickname-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+#nickname-modal { z-index: 3000; } /* 닉네임 설정은 최상위 */
+#shop-content, #guide-content, #ranking-content, #nickname-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; color: white; }
 .shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; border: 1px solid #444; }
 .shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
 .shop-desc { font-size: 11px; color: #ddd; text-align: left; width: 100%; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
-#guide-content { background: #222; width: 90%; max-height: 80vh; padding: 25px; border-radius: 15px; border: 2px solid #3498db; color: white; display: flex; flex-direction: column; }
-.guide-scroll { overflow-y: auto; flex-grow: 1; font-size: 13px; line-height: 1.6; text-align: left; }
+.guide-scroll { overflow-y: auto; flex-grow: 1; font-size: 13px; line-height: 1.6; text-align: left; max-height: 50vh; }
 .guide-scroll h3 { color: #3498db; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 20px; }
+
+/* 랭킹 스타일 */
+.ranking-header { display: grid; grid-template-columns: 1fr 3fr 2fr; padding: 5px; border-bottom: 2px solid #555; font-weight: bold; color: #aaa; margin-bottom: 10px; font-size: 12px; }
+.rank-row { display: grid; grid-template-columns: 1fr 3fr 2fr; padding: 8px 5px; border-bottom: 1px solid #333; font-size: 13px; align-items: center; }
+.rank-row:nth-child(even) { background: rgba(255,255,255,0.05); }
+.rank-row.my-rank { border: 2px solid var(--gold); background: rgba(241, 196, 15, 0.2); font-weight: bold; color: var(--gold); }
+.rank-row.top1 { color: #ffd700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+.rank-row.top2 { color: #c0c0c0; }
+.rank-row.top3 { color: #cd7f32; }
 
 /* 던전 탭 */
 #war-view { display: none; flex-direction: column; height: 100%; }
@@ -92,12 +101,11 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .dungeon-card.unlocked { border-left: 5px solid var(--red); background: #2c4a70; cursor: pointer; }
 .dungeon-card.locked { opacity: 0.6; filter: grayscale(1); }
 
-/* ★ 전투 화면 및 배경 테마 ★ */
+/* 전투 화면 및 배경 */
 #battle-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 9999; display: none; overflow: hidden; }
 #battle-camera { width: 100%; height: 100%; position: relative; overflow: hidden; }
 #battle-world { width: 200vw; height: 200vh; position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 
-/* 배경 패턴 정의 */
 .bg-grass { background-color: #2e8b57; background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 50px 50px; }
 .bg-stone { background-color: #34495e; background-image: radial-gradient(#2c3e50 15%, transparent 16%), radial-gradient(#2c3e50 15%, transparent 16%); background-size: 30px 30px; background-position: 0 0, 15px 15px; }
 .bg-water { background-color: #2980b9; background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.1) 10px, rgba(255,255,255,0.1) 20px); }
