@@ -1,4 +1,4 @@
-// Version: 6.5.0 - Battle System (Stable)
+// Version: 6.6.0 - Battle System (Stable)
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
