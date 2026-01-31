@@ -1,4 +1,4 @@
-// Version: 6.0.0 - Full Features
+// Version: 6.5.0 - Ranking System
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -17,6 +17,7 @@ let isMuted = false;
 let slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
 let globalUpgrades = { cd: 0, rng: 0 };
 let greatChanceLevel = 0; 
+let nickname = ""; // 닉네임
 
 let isResetting = false;
 
@@ -35,16 +36,16 @@ function saveGame() {
     const data = { 
         gold, maxSlots, inventory, unlockedDungeon, pickaxeIdx, autoMineLevel,
         mercenaryIdx, ownedMercenaries, autoMergeSpeedLevel, isMuted,
-        slotUpgrades, globalUpgrades, greatChanceLevel,
+        slotUpgrades, globalUpgrades, greatChanceLevel, nickname, // 닉네임 저장
         lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV600', JSON.stringify(data));
+    localStorage.setItem('toothSaveV650', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV600');
+    const saved = localStorage.getItem('toothSaveV650');
     // 호환성 로드
-    const legacy = localStorage.getItem('toothSaveV550') || localStorage.getItem('toothSaveV500') || localStorage.getItem('toothSaveV420') || localStorage.getItem('toothSaveV410');
+    const legacy = localStorage.getItem('toothSaveV600') || localStorage.getItem('toothSaveV550') || localStorage.getItem('toothSaveV500') || localStorage.getItem('toothSaveV420');
     
     let d = null;
     if (saved) d = JSON.parse(saved);
@@ -64,6 +65,7 @@ function loadGame() {
         if (d.slotUpgrades && Array.isArray(d.slotUpgrades)) slotUpgrades = d.slotUpgrades;
         if (d.globalUpgrades) globalUpgrades = d.globalUpgrades;
         if (d.greatChanceLevel) greatChanceLevel = d.greatChanceLevel;
+        if (d.nickname) nickname = d.nickname;
         
         if (!isMiningPaused && d.lastTime) {
             const offTime = (Date.now() - d.lastTime) / 1000;
@@ -78,9 +80,132 @@ function loadGame() {
             }
         }
     }
+    
+    // 닉네임 없으면 설정 모달 띄우기
+    if (!nickname) {
+        document.getElementById('nickname-input').value = generateRandomId();
+        document.getElementById('nickname-modal').style.display = 'flex';
+    }
+
     cleanupInventory();
     updateSoundBtn();
     updatePickaxeVisual();
+}
+
+function generateRandomId() {
+    return "User-" + Math.random().toString(36).substr(2, 4);
+}
+
+function confirmNickname() {
+    const input = document.getElementById('nickname-input').value.trim();
+    if(input.length > 0) {
+        nickname = input;
+        document.getElementById('nickname-modal').style.display = 'none';
+        saveGame();
+    } else {
+        alert("닉네임을 입력해주세요.");
+    }
+}
+
+// ★ 가상 랭킹 시스템 ★
+function openRanking() {
+    const modal = document.getElementById('ranking-modal');
+    modal.style.display = 'flex';
+    generateRankings();
+}
+
+function closeRanking() {
+    document.getElementById('ranking-modal').style.display = 'none';
+}
+
+function calculateTotalPower() {
+    let power = 0;
+    // 전투력 계산: (던전진행도 * 1000000) + (보유 치아들의 공격력 합)
+    for(let i=0; i<maxSlots; i++) {
+        if(inventory[i] > 0) power += getAtk(inventory[i]);
+    }
+    // 던전 진행도를 가장 큰 비중으로
+    return (unlockedDungeon * 1000000) + power;
+}
+
+function generateRankings() {
+    const list = document.getElementById('ranking-list');
+    const myScore = calculateTotalPower();
+    let ranks = [];
+
+    // 나 추가
+    ranks.push({ name: nickname, score: myScore, isMe: true });
+
+    // 가상 봇 50명 생성
+    // 내 점수 기준으로 위아래 분포 (던전 20 클리어 시 공동 1위 처리)
+    const isMaxDungeon = unlockedDungeon > 20; // 20 깨면 21이 됨
+
+    for(let i=0; i<50; i++) {
+        let botScore = 0;
+        let botName = "";
+
+        // 90% 확률로 랜덤 ID, 10% 확률로 네임드 ID
+        if(Math.random() < 0.9) {
+            botName = generateRandomId();
+        } else {
+            botName = TOOTH_DATA.botNames[Math.floor(Math.random() * TOOTH_DATA.botNames.length)];
+        }
+
+        if (isMaxDungeon) {
+            // 엔딩 본 경우: 나랑 비슷한 점수(공동 1위권) 생성
+            // 20% 확률로 나랑 완전 동점
+            if(Math.random() < 0.2) botScore = myScore;
+            else botScore = myScore * (0.95 + Math.random() * 0.05); // 아주 약간 낮게
+        } else {
+            // 성장 중: 내 점수의 0.5배 ~ 1.5배 사이로 분포
+            // 단, unlockedDungeon이 낮으면 상위권 봇을 더 많이 생성해서 기죽이기
+            const multiplier = unlockedDungeon < 5 ? (1.0 + Math.random() * 5.0) : (0.8 + Math.random() * 0.4);
+            botScore = Math.floor(myScore * multiplier);
+        }
+        
+        ranks.push({ name: botName, score: botScore, isMe: false });
+    }
+
+    // 점수 내림차순 정렬
+    ranks.sort((a, b) => b.score - a.score);
+
+    // 공동 1위 처리 (동점이면 같은 등수)
+    let currentRank = 1;
+    for(let i=0; i < ranks.length; i++) {
+        if (i > 0 && ranks[i].score < ranks[i-1].score) {
+            currentRank = i + 1;
+        }
+        ranks[i].rank = currentRank;
+    }
+
+    // 렌더링
+    let html = "";
+    let myRankInfo = null;
+
+    ranks.forEach(r => {
+        let rowClass = "rank-row";
+        if (r.rank === 1) rowClass += " top1";
+        else if (r.rank === 2) rowClass += " top2";
+        else if (r.rank === 3) rowClass += " top3";
+        if (r.isMe) {
+            rowClass += " my-rank";
+            myRankInfo = r;
+        }
+
+        html += `
+        <div class="${rowClass}">
+            <span>${r.rank}위</span>
+            <span>${r.name}</span>
+            <span>${fNum(r.score)}</span>
+        </div>`;
+    });
+
+    list.innerHTML = html;
+    
+    // 내 순위 하단 표시
+    if(myRankInfo) {
+        document.getElementById('my-rank-display').innerText = `내 순위: ${myRankInfo.rank}위 (점수: ${fNum(myRankInfo.score)})`;
+    }
 }
 
 function cleanupInventory() {
@@ -95,7 +220,6 @@ function cleanupInventory() {
     if(cleared && currentView === 'mine') renderInventory();
 }
 
-// 가이드 모달 함수
 function openGuide() { document.getElementById('guide-modal').style.display = 'flex'; }
 function closeGuide() { document.getElementById('guide-modal').style.display = 'none'; }
 
@@ -196,7 +320,7 @@ function renderShopItems() {
 function buyItem(type, cost) {
     if (gold >= cost) {
         gold -= cost;
-        playSfx('upgrade'); // 사운드 추가
+        playSfx('upgrade'); 
         if (type === 'pick') {
             pickaxeIdx++;
             cleanupInventory();
@@ -373,8 +497,8 @@ function checkCoupon() {
     else { alert("유효하지 않은 쿠폰입니다."); } 
 }
 
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV600'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV600', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV650'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV650', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 
 function renderDungeonList() { 
     const list = document.getElementById('dungeon-list'); 
