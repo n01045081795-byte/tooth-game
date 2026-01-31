@@ -1,4 +1,4 @@
-// Version: 5.5.0 - Refine Lock, Guide, Sound
+// Version: 6.0.0 - Full Features
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -38,13 +38,13 @@ function saveGame() {
         slotUpgrades, globalUpgrades, greatChanceLevel,
         lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV550', JSON.stringify(data));
+    localStorage.setItem('toothSaveV600', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV550');
+    const saved = localStorage.getItem('toothSaveV600');
     // 호환성 로드
-    const legacy = localStorage.getItem('toothSaveV500') || localStorage.getItem('toothSaveV420') || localStorage.getItem('toothSaveV410');
+    const legacy = localStorage.getItem('toothSaveV550') || localStorage.getItem('toothSaveV500') || localStorage.getItem('toothSaveV420') || localStorage.getItem('toothSaveV410');
     
     let d = null;
     if (saved) d = JSON.parse(saved);
@@ -241,10 +241,6 @@ function renderRefineView() {
     </div>
     `;
     
-    // ★ 제련 슬롯 순차 해금 로직 ★
-    // 슬롯0: 항상 오픈 / 슬롯1: 던전1클리어 필요 / 슬롯2: 던전2클리어 필요 ...
-    // unlockedDungeon은 1부터 시작 (던전0 깨면 2)
-    // 따라서 idx < unlockedDungeon 이면 오픈
     slotUpgrades.forEach((slot, idx) => {
         const isLocked = idx >= unlockedDungeon;
         
@@ -377,8 +373,8 @@ function checkCoupon() {
     else { alert("유효하지 않은 쿠폰입니다."); } 
 }
 
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV550'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV550', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV600'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV600', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 
 function renderDungeonList() { 
     const list = document.getElementById('dungeon-list'); 
@@ -388,7 +384,6 @@ function renderDungeonList() {
         const isUnlocked = idx < unlockedDungeon; 
         div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; 
         
-        // 난이도 하향 조정: 2.5 -> 2.2
         const baseHp = Math.floor(100 * Math.pow(2.2, idx));
         const bossHp = baseHp * 30;
         const recAtk = bossHp / 40;
