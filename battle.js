@@ -1,4 +1,4 @@
-// Version: 4.1.0 - Sequential Fire & Gold Balance
+// Version: 4.2.0 - Round Robin Fire & Boss Fix
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -8,7 +8,10 @@ let isBossWave = false;
 let dungeonActive = false;
 let dungeonGoldEarned = 0;
 let spawnTimeouts = []; 
-let shotDelay = 0; 
+
+// ★ 순차 발사 포인터 (0~7) ★
+let fireCursor = 0; 
+let bossDead = false; // 보스 사망 후 연출 대기용 플래그
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -24,6 +27,8 @@ function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
     dungeonGoldEarned = 0;
+    fireCursor = 0;
+    bossDead = false;
     
     spawnTimeouts.forEach(id => clearTimeout(id));
     spawnTimeouts = [];
@@ -56,7 +61,7 @@ function updatePlayerHpBar() { const fill = document.getElementById('player-hp-b
 function updatePlayerPos() { const p = document.getElementById('player'); if(p) { p.style.left = playerX + 'px'; p.style.top = playerY + 'px'; } }
 
 function spawnWave() {
-    if (!dungeonActive) return;
+    if (!dungeonActive || bossDead) return;
     if (isBossWave && enemies.some(e => e.isBoss)) return;
 
     document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`;
@@ -65,7 +70,7 @@ function spawnWave() {
     
     for (let i = 0; i < count; i++) {
         const tid = setTimeout(() => { 
-            if(dungeonActive) {
+            if(dungeonActive && !bossDead) {
                 if (isBossWave && enemies.some(e => e.isBoss)) return;
                 spawnEnemy(isBossWave); 
             }
@@ -94,26 +99,30 @@ function updateCamera() { const camX = playerX - window.innerWidth / 2; const ca
 function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
-    enemies.forEach(en => {
-        const dx = playerX - en.x; const dy = playerY - en.y;
-        const angle = Math.atan2(dy, dx);
-        const speed = en.isBoss ? 1.5 : 2.5;
-        en.x += Math.cos(angle) * speed; en.y += Math.sin(angle) * speed;
-        en.el.style.left = en.x + 'px'; en.el.style.top = en.y + 'px';
-        if (!isInvincible && Math.hypot(playerX - en.x, playerY - en.y) < 30) { takeDamage(10 + (currentDungeonIdx * 5)); }
-    });
+    // 1. 적 이동 (보스 죽으면 멈춤)
+    if (!bossDead) {
+        enemies.forEach(en => {
+            const dx = playerX - en.x; const dy = playerY - en.y;
+            const angle = Math.atan2(dy, dx);
+            const speed = en.isBoss ? 1.5 : 2.5;
+            en.x += Math.cos(angle) * speed; en.y += Math.sin(angle) * speed;
+            en.el.style.left = en.x + 'px'; en.el.style.top = en.y + 'px';
+            if (!isInvincible && Math.hypot(playerX - en.x, playerY - en.y) < 30) { takeDamage(10 + (currentDungeonIdx * 5)); }
+        });
+    }
 
+    // 2. 발사 로직 (Round Robin)
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => { const d = Math.hypot(playerX - en.x, playerY - en.y); if (d < minDst) { minDst = d; nearest = en; } });
     
-    if (shotDelay > 0) shotDelay--;
-
+    // 모든 무기 쿨타임 회복
     for (let i = 0; i < 8; i++) {
-        const cdReductionPercent = Math.min(80, globalUpgrades.cd * 2); 
-        const maxCD = Math.max(20, (100 - (inventory[i] * 2)) * (1 - cdReductionPercent/100));
+        // 기본 240프레임(4초) - (만렙 시 90% 감소 = 24프레임(0.4초))
+        const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
+        const maxCD = Math.max(24, 240 * (1 - cdReductionPercent/100));
         
         if (weaponCD[i] < maxCD) weaponCD[i]++;
-        
+
         const slotEl = document.getElementById(`war-slot-${i}`);
         if (slotEl) {
             const mask = slotEl.querySelector('.cd-overlay');
@@ -121,20 +130,35 @@ function updateCombat() {
             mask.style.height = `${percent}%`;
             if (weaponCD[i] >= maxCD) slotEl.classList.add('ready'); else slotEl.classList.remove('ready');
         }
-        
-        if (weaponCD[i] >= maxCD && inventory[i] > 0 && nearest && shotDelay <= 0) {
-            const maxRngLimit = worldWidth / 2;
-            const calcRng = 300 + (globalUpgrades.rng * 20);
-            const range = Math.min(maxRngLimit, calcRng);
+    }
+
+    // ★ 순차 발사: fireCursor부터 시작해서 준비된 첫 번째 무기를 발사하고 종료 ★
+    if (nearest && !bossDead) {
+        for (let k = 0; k < 8; k++) {
+            // fireCursor에서 시작하여 8개 슬롯을 순환 체크
+            let idx = (fireCursor + k) % 8;
             
-            if (minDst <= range) { 
-                shoot(i, nearest); 
-                weaponCD[i] = 0; 
-                shotDelay = 5; 
+            // 쿨타임 Max & 아이템 존재 체크
+            const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
+            const maxCD = Math.max(24, 240 * (1 - cdReductionPercent/100));
+
+            if (weaponCD[idx] >= maxCD && inventory[idx] > 0) {
+                const maxRngLimit = worldWidth / 2;
+                const calcRng = 300 + (globalUpgrades.rng * 20);
+                const range = Math.min(maxRngLimit, calcRng);
+                
+                if (minDst <= range) {
+                    shoot(idx, nearest);
+                    weaponCD[idx] = 0; // 발사했으니 쿨타임 초기화
+                    // ★ 중요: 다음 프레임에는 이 다음 슬롯부터 검사함 ★
+                    fireCursor = (idx + 1) % 8; 
+                    break; // 한 프레임에 하나만 발사 (기관총 효과)
+                }
             }
         }
     }
 
+    // 3. 미사일 처리
     for (let i = missiles.length - 1; i >= 0; i--) {
         const m = missiles[i];
         m.x += m.vx; m.y += m.vy;
@@ -151,18 +175,23 @@ function updateCombat() {
                 m.el.remove(); missiles.splice(i, 1);
                 
                 if (en.hp <= 0) {
-                    // ★ 골드 상향: 2000 * 2.5^난이도 ★
                     const gain = Math.floor(2000 * Math.pow(2.5, currentDungeonIdx));
                     gold += gain;
                     dungeonGoldEarned += gain;
                     showGoldText(en.x, en.y, gain);
                     
                     if (en.isBoss) {
+                        // ★ 보스 사망 처리: 플래그 켜고 1초 대기 ★
+                        bossDead = true;
                         createExplosion(en.x, en.y);
                         en.el.remove();
                         enemies.splice(j, 1);
-                        dungeonActive = false;
-                        setTimeout(() => { showResultModal(); }, 800);
+                        
+                        // 1.5초 후 결과창 (게임 루프는 멈추지 않음 -> 연출 유지)
+                        setTimeout(() => { 
+                            showResultModal(); 
+                            dungeonActive = false; // 이때 멈춤
+                        }, 1500);
                         return;
                     } else {
                         en.el.remove();
@@ -184,8 +213,9 @@ function createExplosion(x, y) {
     exp.style.left = x + 'px'; exp.style.top = y + 'px';
     exp.style.transform = 'translate(-50%, -50%)';
     exp.style.fontSize = '150px';
-    exp.style.zIndex = '999';
-    exp.style.animation = 'popUp 0.5s ease-out';
+    exp.style.zIndex = '2000';
+    exp.style.textShadow = '0 0 20px red';
+    exp.style.animation = 'popUp 1s ease-out';
     worldDiv.appendChild(exp);
     setTimeout(() => exp.remove(), 1000);
 }
