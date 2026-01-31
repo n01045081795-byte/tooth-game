@@ -1,5 +1,4 @@
-// battle.js (전체 복사해서 덮어쓰세요)
-// Version: 3.8.1 - Visual Fix & Boss Logic
+// Version: 3.8.2 - Visual Fix & Boss Logic
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -7,7 +6,8 @@ let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
 let dungeonActive = false;
-let dungeonGoldEarned = 0; // 획득 골드 집계
+let dungeonGoldEarned = 0;
+let spawnTimeouts = []; // ★ 스폰 타이머 관리용 배열 추가
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -18,16 +18,19 @@ let playerMaxHp = 100;
 let isInvincible = false;
 let joystickActive = false;
 let moveX = 0; let moveY = 0;
-let fireIndex = 0;
-let fireTimer = 0;
-const FIRE_RATE = 200;
 
+// 던전 시작
 function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
     dungeonGoldEarned = 0;
     
-    // 수정: 던전 시작 시 현재 고용된 용병 정보 확실하게 로드
+    // ★ 기존 스폰 예약 취소 (중복 소환 방지) ★
+    spawnTimeouts.forEach(id => clearTimeout(id));
+    spawnTimeouts = [];
+
+    // ★ 핵심 수정: 던전 입장 시 현재 고용된 용병 정보 확실하게 로드 ★
+    // script.js의 mercenaryIdx 변수를 참조하여 현재 용병을 가져옴
     currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx];
     
     worldWidth = window.innerWidth * 2; worldHeight = window.innerHeight * 2;
@@ -42,7 +45,7 @@ function startDungeon(idx) {
     if (playerEl) playerEl.remove();
     playerEl = document.createElement('div');
     playerEl.id = 'player';
-    // 수정: currentMercenary.icon을 사용하여 고용된 용병 모습 표시
+    // ★ 수정: currentMercenary.icon 사용 ★
     playerEl.innerHTML = `<div id="player-hp-bar-bg"><div id="player-hp-bar-fill"></div></div><div id="player-char">${currentMercenary.icon}</div>`;
     document.getElementById('battle-world').appendChild(playerEl);
     
@@ -53,33 +56,29 @@ function startDungeon(idx) {
     requestAnimationFrame(battleLoop);
 }
 
-function updateMercenary() { 
-    if (!TOOTH_DATA.mercenaries[mercenaryIdx]) mercenaryIdx = 0; 
-    currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx]; 
-}
-
 function updatePlayerHpBar() { const fill = document.getElementById('player-hp-bar-fill'); if (fill) fill.style.width = (playerHp / playerMaxHp * 100) + '%'; }
 function updatePlayerPos() { const p = document.getElementById('player'); if(p) { p.style.left = playerX + 'px'; p.style.top = playerY + 'px'; } }
 
 function spawnWave() {
     if (!dungeonActive) return;
     
-    // 보스 중복 스폰 방지
+    // ★ 안전장치: 보스 웨이브인데 이미 보스가 있다면 스폰 중단 ★
     if (isBossWave && enemies.some(e => e.isBoss)) return;
 
     document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`;
     
-    // 보스일 경우 무조건 1마리, 아니면 웨이브 공식
+    // 보스는 무조건 1마리
     const count = isBossWave ? 1 : 5 + (currentWave * 2);
     
     for (let i = 0; i < count; i++) {
-        setTimeout(() => { 
+        const tid = setTimeout(() => { 
             if(dungeonActive) {
-                // 보스가 이미 있으면 추가 스폰 막기 (안전장치)
+                // 보스가 이미 있으면 절대 스폰하지 않음
                 if (isBossWave && enemies.some(e => e.isBoss)) return;
                 spawnEnemy(isBossWave); 
             }
         }, i * 800);
+        spawnTimeouts.push(tid);
     }
 }
 
@@ -159,7 +158,8 @@ function updateCombat() {
                         en.el.remove();
                         enemies.splice(j, 1);
                         dungeonActive = false; // 즉시 정지
-                        setTimeout(() => { showResultModal(); }, 100); // UI 업데이트 보장 후 호출
+                        // 즉시 모달 호출
+                        showResultModal(); 
                         return;
                     } else {
                         en.el.remove();
@@ -188,8 +188,21 @@ function showResultModal() {
 function shoot(slotIdx, target) { playSfx('attack'); const worldDiv = document.getElementById('battle-world'); const mEl = document.createElement('div'); mEl.className = 'missile'; mEl.innerHTML = getToothIcon(inventory[slotIdx]); worldDiv.appendChild(mEl); const angle = Math.atan2(target.y - playerY, target.x - playerX); const speed = 18; let refineMul = 1 + (slotUpgrades[slotIdx].atk * 0.1); const dmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul * refineMul; missiles.push({ el: mEl, x: playerX, y: playerY, startX: playerX, startY: playerY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, dmg: dmg }); }
 function showDmgText(x, y, dmg) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'dmg-text'; txt.innerText = fNum(dmg); txt.style.left = x + 'px'; txt.style.top = (y - 40) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 500); }
 function showGoldText(x, y, val) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'gold-text'; txt.innerText = `💰+${fNum(val)}`; txt.style.left = x + 'px'; txt.style.top = (y - 50) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 800); }
-function checkWaveClear() { if (enemies.length === 0) { if (isBossWave) { /* 보스 클리어는 updateCombat에서 처리됨 */ } else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); } } }
+function checkWaveClear() { if (enemies.length === 0) { if (isBossWave) { /* 보스 처리는 updateCombat에서 함 */ } else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); } } }
 function closeResultModal() { document.getElementById('dungeon-result-modal').style.display = 'none'; exitDungeon(); }
-function exitDungeon() { dungeonActive = false; enemies.forEach(en => en.el.remove()); missiles.forEach(m => m.el.remove()); enemies = []; missiles = []; document.getElementById('battle-screen').style.display = 'none'; document.getElementById('game-container').style.display = 'flex'; document.getElementById('top-nav').style.display = 'grid'; if(window.renderDungeonList) window.renderDungeonList(); }
+function exitDungeon() { 
+    dungeonActive = false; 
+    enemies.forEach(en => en.el.remove()); 
+    missiles.forEach(m => m.el.remove()); 
+    enemies = []; missiles = []; 
+    // ★ 타이머 정리 ★
+    spawnTimeouts.forEach(id => clearTimeout(id));
+    spawnTimeouts = [];
+    
+    document.getElementById('battle-screen').style.display = 'none'; 
+    document.getElementById('game-container').style.display = 'flex'; 
+    document.getElementById('top-nav').style.display = 'grid'; 
+    if(window.renderDungeonList) window.renderDungeonList(); 
+}
 function renderWarWeapons() { const container = document.getElementById('war-weapon-slots'); container.innerHTML = ''; for (let i = 0; i < 8; i++) { const slot = document.createElement('div'); slot.className = 'war-slot'; slot.id = `war-slot-${i}`; slot.innerHTML = `<div class="cd-overlay"></div>` + getToothIcon(inventory[i]); container.appendChild(slot); } }
 function setupJoystick() { const zone = document.getElementById('joystick-zone'); const knob = document.getElementById('joystick-knob'); let touchId = null; const handleStart = (e) => { e.preventDefault(); const touch = e.changedTouches ? e.changedTouches[0] : e; touchId = touch.identifier; joystickActive = true; updateKnob(touch.clientX, touch.clientY); }; const handleMove = (e) => { if (!joystickActive) return; e.preventDefault(); const touch = e.changedTouches ? Array.from(e.changedTouches).find(t => t.identifier === touchId) : e; if (touch) updateKnob(touch.clientX, touch.clientY); }; const handleEnd = (e) => { e.preventDefault(); joystickActive = false; moveX = 0; moveY = 0; knob.style.transform = `translate(-50%, -50%)`; knob.style.left = '50%'; knob.style.top = '50%'; }; const updateKnob = (cx, cy) => { const rect = zone.getBoundingClientRect(); const centerX = rect.left + rect.width / 2; const centerY = rect.top + rect.height / 2; let dx = cx - centerX; let dy = cy - centerY; const dist = Math.sqrt(dx*dx + dy*dy); const maxDist = rect.width / 2 - 25; const angle = Math.atan2(dy, dx); const clampedDist = Math.min(dist, maxDist); moveX = Math.cos(angle) * (clampedDist / maxDist); moveY = Math.sin(angle) * (clampedDist / maxDist); const kx = Math.cos(angle) * clampedDist; const ky = Math.sin(angle) * clampedDist; knob.style.transform = `translate(-50%, -50%) translate(${kx}px, ${ky}px)`; }; zone.addEventListener('touchstart', handleStart); zone.addEventListener('touchmove', handleMove); zone.addEventListener('touchend', handleEnd); zone.addEventListener('mousedown', handleStart); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleEnd); }
