@@ -1,4 +1,4 @@
-// Version: 3.9.0 - Sequential Fire & Global Stats
+// Version: 4.1.0 - Sequential Fire & Gold Balance
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -8,8 +8,6 @@ let isBossWave = false;
 let dungeonActive = false;
 let dungeonGoldEarned = 0;
 let spawnTimeouts = []; 
-
-// ★ 순차 발사를 위한 딜레이 변수 ★
 let shotDelay = 0; 
 
 let worldWidth = window.innerWidth * 2;
@@ -96,7 +94,6 @@ function updateCamera() { const camX = playerX - window.innerWidth / 2; const ca
 function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
-    // 1. 적 이동 및 충돌
     enemies.forEach(en => {
         const dx = playerX - en.x; const dy = playerY - en.y;
         const angle = Math.atan2(dy, dx);
@@ -106,22 +103,17 @@ function updateCombat() {
         if (!isInvincible && Math.hypot(playerX - en.x, playerY - en.y) < 30) { takeDamage(10 + (currentDungeonIdx * 5)); }
     });
 
-    // 2. 발사 로직 (글로벌 업그레이드 적용)
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => { const d = Math.hypot(playerX - en.x, playerY - en.y); if (d < minDst) { minDst = d; nearest = en; } });
     
-    // 순차 발사 딜레이 감소
     if (shotDelay > 0) shotDelay--;
 
     for (let i = 0; i < 8; i++) {
-        // ★ 쿨타임: 글로벌 적용, 최대 80% 감소 ★
-        // 기본 100프레임 - (템레벨*2) - (글로벌CD * 2%)
         const cdReductionPercent = Math.min(80, globalUpgrades.cd * 2); 
         const maxCD = Math.max(20, (100 - (inventory[i] * 2)) * (1 - cdReductionPercent/100));
         
         if (weaponCD[i] < maxCD) weaponCD[i]++;
         
-        // UI 갱신
         const slotEl = document.getElementById(`war-slot-${i}`);
         if (slotEl) {
             const mask = slotEl.querySelector('.cd-overlay');
@@ -130,10 +122,7 @@ function updateCombat() {
             if (weaponCD[i] >= maxCD) slotEl.classList.add('ready'); else slotEl.classList.remove('ready');
         }
         
-        // ★ 발사: 딜레이 체크 (순차 발사) ★
         if (weaponCD[i] >= maxCD && inventory[i] > 0 && nearest && shotDelay <= 0) {
-            // ★ 사거리: 글로벌 적용, 최대 맵 절반 ★
-            // 기본 300 + (글로벌RNG * 20), 최대 worldWidth/2
             const maxRngLimit = worldWidth / 2;
             const calcRng = 300 + (globalUpgrades.rng * 20);
             const range = Math.min(maxRngLimit, calcRng);
@@ -141,12 +130,11 @@ function updateCombat() {
             if (minDst <= range) { 
                 shoot(i, nearest); 
                 weaponCD[i] = 0; 
-                shotDelay = 5; // 다음 슬롯 발사까지 5프레임 딜레이 (순차 발사 느낌)
+                shotDelay = 5; 
             }
         }
     }
 
-    // 3. 미사일 충돌
     for (let i = missiles.length - 1; i >= 0; i--) {
         const m = missiles[i];
         m.x += m.vx; m.y += m.vy;
@@ -163,18 +151,18 @@ function updateCombat() {
                 m.el.remove(); missiles.splice(i, 1);
                 
                 if (en.hp <= 0) {
-                    const gain = (currentDungeonIdx + 1) * 100;
+                    // ★ 골드 상향: 2000 * 2.5^난이도 ★
+                    const gain = Math.floor(2000 * Math.pow(2.5, currentDungeonIdx));
                     gold += gain;
                     dungeonGoldEarned += gain;
                     showGoldText(en.x, en.y, gain);
                     
                     if (en.isBoss) {
-                        // ★ 보스 사망 시 폭발 이펙트 & 즉시 클리어 ★
                         createExplosion(en.x, en.y);
                         en.el.remove();
                         enemies.splice(j, 1);
                         dungeonActive = false;
-                        setTimeout(() => { showResultModal(); }, 800); // 폭발 감상 후 결과창
+                        setTimeout(() => { showResultModal(); }, 800);
                         return;
                     } else {
                         en.el.remove();
@@ -188,7 +176,6 @@ function updateCombat() {
     }
 }
 
-// ★ 보스 폭발 이펙트 ★
 function createExplosion(x, y) {
     const worldDiv = document.getElementById('battle-world');
     const exp = document.createElement('div');
