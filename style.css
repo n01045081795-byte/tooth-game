@@ -1,12 +1,11 @@
-/* Version: 3.9.0 - Mercenary UI & Tile Ready */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; --green: #2ecc71; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
 
-#game-container { width: 100%; max-width: 450px; height: 100dvh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; z-index: 1; }
+#game-container { width: 100%; max-width: 450px; height: 100dvh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; }
 
-#top-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--blue); flex-shrink: 0; min-height: 45px; z-index: 100; position: relative; }
-#top-nav button { border: none; background: none; color: #888; font-weight: bold; font-size: 13px; cursor: pointer; padding: 0; pointer-events: auto; }
+#top-nav { display: grid; grid-template-columns: 1fr 1fr 1fr; background: var(--blue); flex-shrink: 0; min-height: 45px; z-index: 100; }
+#top-nav button { border: none; background: none; color: #888; font-weight: bold; font-size: 13px; cursor: pointer; }
 #top-nav button.active { color: #fff; border-bottom: 3px solid var(--red); background: rgba(255,255,255,0.05); }
 
 .stats-bar { display: flex; justify-content: space-between; padding: 0 15px; background: rgba(0,0,0,0.3); align-items: center; flex-shrink: 0; height: 45px; font-size: 14px; }
@@ -14,131 +13,78 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 
 #main-content { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
 
-/* 광산 */
-#mine-view { height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 100%; background: var(--bg); border-bottom: 2px solid #000; z-index: 10; }
+/* 광산 뷰 */
+#mine-view { height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; width: 100%; background: var(--bg); border-bottom: 2px solid #000; }
 #mine-rock-area { position: relative; width: 100%; height: 110px; display: flex; justify-content: center; align-items: center; cursor: pointer; touch-action: manipulation; }
-#giant-tooth { font-size: 60px; z-index: 1; pointer-events: none; }
-#miner-char { font-size: 50px; position: absolute; right: 25%; top: 10px; transform-origin: bottom center; z-index: 2; pointer-events: none; }
+#giant-tooth { font-size: 60px; z-index: 10; pointer-events: none; }
+#miner-char { font-size: 50px; position: absolute; right: 25%; top: 10px; transform-origin: bottom center; z-index: 11; pointer-events: none; }
 .swing { animation: hammer 0.08s ease-in-out; }
 @keyframes hammer { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-45deg); } }
 
 /* 게이지 */
-#pickaxe-info { width: 90%; display: flex; flex-direction: column; align-items: center; margin-top: 2px; }
-#pickaxe-name { font-size: 12px; margin-bottom: 3px; color: #aaa; }
+#pickaxe-info { width: 90%; display: flex; flex-direction: column; align-items: center; }
 .progress-wrapper { width: 100%; margin-bottom: 3px; display: flex; align-items: center; }
 .progress-label { font-size: 10px; color: #ccc; width: 60px; flex-shrink: 0; text-align: right; padding-right: 5px; }
 .progress-container { flex-grow: 1; height: 8px; background: #444; border-radius: 4px; overflow: hidden; position: relative; }
-#mine-bar { width: 0%; height: 100%; background-color: #00fbff; transition: width 0.1s linear; display: block; }
-#merge-bar { width: 0%; height: 100%; background-color: #9b59b6; transition: width 0.1s linear; display: block; }
+#mine-bar { width: 0%; height: 100%; background-color: #00fbff; transition: width 0.1s linear; }
+#merge-bar { width: 0%; height: 100%; background-color: #9b59b6; transition: width 0.1s linear; }
 
 /* 인벤토리 */
 #inventory-section { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; width: 100%; background: var(--bg); }
-#action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 10px; width: 100%; flex-shrink: 0; }
-#inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; min-height: 0; }
+#action-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 10px; width: 100%; }
+#inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; }
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; padding-bottom: 20px; }
 
-/* 제련 탭 */
+/* 제련 탭 복구 */
 #refine-view { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; background: #111; }
-.refine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
+.refine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 30px; }
 .refine-card { background: #222; border: 1px solid var(--gold); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-.refine-header { font-size: 12px; font-weight: bold; color: var(--gold); text-align: center; margin-bottom: 5px; }
+.refine-header { font-size: 12px; font-weight: bold; color: var(--gold); text-align: center; }
 .refine-btn { 
-    background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 8px 6px; 
-    font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center;
+    background: #333; color: white; border: 1px solid #555; border-radius: 4px; padding: 8px 5px; 
+    font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; align-items: center; 
 }
-.refine-btn:active { background: #444; }
 .refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; }
 
-/* 쿠폰창 */
-#cheat-section { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #222; margin: 0; border-top: 1px solid #444; flex-shrink: 0; width: 100%; height: 50px; }
-.cheat-group-left { display: flex; gap: 5px; flex-grow: 1; margin-right: 10px; }
+/* 버튼 공통 */
+.btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; }
+.btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; }
+.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; }
+.btn-green { background: var(--green); color: #000; font-weight: bold; padding: 6px; border-radius: 4px; border: none; }
+.btn-gray { background: var(--gray); color: #333; font-weight: bold; padding: 6px; border-radius: 4px; border: none; }
+.btn-sm { padding: 6px 10px; border-radius: 4px; border: none; font-size: 11px; cursor: pointer; }
+.btn-toggle { padding: 6px; border: none; border-radius: 4px; font-weight: bold; font-size: 11px; width: 60px; }
+
+/* 던전 월드 */
+#battle-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 9999; display: none; overflow: hidden; }
+#battle-camera { width: 100%; height: 100%; position: relative; overflow: hidden; }
+#battle-world { width: 200vw; height: 200vh; position: absolute; left: 0; top: 0; background-color: #111; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 40px 40px; }
+
+#player { position: absolute; font-size: 40px; transform: translate(-50%, -50%); z-index: 500; display: flex; flex-direction: column; align-items: center; }
+.invincible { animation: blink 0.2s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+#player-hp-bar-bg { width: 40px; height: 5px; background: #000; border: 1px solid #fff; }
+#player-hp-bar-fill { height: 100%; background: #2ecc71; width: 100%; }
+
+.battle-enemy { position: absolute; font-size: 35px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 400; }
+.battle-enemy.boss { font-size: 100px; z-index: 450; filter: drop-shadow(0 0 10px red); }
+.hp-bar-bg { width: 40px; height: 5px; background: #444; border: 1px solid #fff; }
+.hp-bar-fill { height: 100%; background: #ff4d4d; }
+
+#joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; pointer-events: auto; }
+#joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: var(--gold); border-radius: 50%; transform: translate(-50%, -50%); }
+
+/* 슬롯 내부 정보 */
+.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.dmg-label { position: absolute; top: 1px; font-size: 6px; color: var(--gold); font-weight: bold; width: 100%; text-align: center; }
+.lv-text { position: absolute; bottom: 0px; font-size: 7px; color: #aaa; width: 100%; text-align: center; }
+
+/* 쿠폰/저장 그룹 */
+#cheat-section { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #222; border-top: 1px solid #444; height: 50px; flex-shrink: 0; }
+.cheat-group-left { display: flex; gap: 5px; flex-grow: 1; }
 .cheat-group-right { display: flex; gap: 5px; }
 #coupon-input { width: 100%; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #333; color: white; font-size: 11px; }
 
-/* 공통 UI */
-.slot { aspect-ratio: 1; background: #1a1a2e; border: 1px solid #4e4e4e; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; font-size: 18px; touch-action: none; overflow: hidden; width: 100%; }
-.slot.picked { opacity: 0.4; border: 2px solid #fff; }
-.slot.drag-target { background: rgba(255,255,255,0.2); border: 2px solid #fff !important; }
-.attack-slot { border-color: var(--red); box-shadow: inset 0 0 5px rgba(233, 69, 96, 0.3); background: #251a25; }
-.locked-slot { background: #0a0a1a; opacity: 0.4; }
-.lv-text { position: absolute; bottom: 0px; font-size: 7px; color: #aaa; pointer-events: none; width: 100%; text-align: center; }
-.dmg-label { position: absolute; top: 1px; font-size: 6px; color: #f1c40f; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 0 #000; width: 100%; text-align: center; }
-.shiny-effect { animation: shine 0.5s ease-in-out; border: 2px solid var(--gold) !important; }
-@keyframes shine { 0% { background: #fff; transform: scale(1.2); } 100% { background: #1a1a2e; transform: scale(1); } }
-#drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
-
-/* 버튼 스타일 */
-.btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; }
-.btn-green { background: var(--green); color: #000; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: none; cursor: default; } /* 고용중 버튼 */
-.btn-gray { background: var(--gray); color: #333; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; } /* 대기 버튼 */
-
-.btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
-.btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
-.btn-exit { position: absolute; top: 15px; right: 15px; background: var(--red); color: white; padding: 8px 15px; border-radius: 6px; border: none; pointer-events: auto; font-weight: bold; z-index: 2000; }
-
-/* 상점 */
-#shop-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-#shop-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; }
-.shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; border: 1px solid #444; }
-.shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
-.shop-desc { font-size: 11px; color: #ddd; text-align: left; width: 100%; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
-
-/* 던전 뷰 */
-#war-view { display: none; flex-direction: column; height: 100%; }
-#mercenary-camp { background: #222; padding: 10px; border-bottom: 1px solid #444; flex-shrink: 0; display: block; }
-#mercenary-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; min-height: 100px; }
-.merc-card { background: #333; padding: 10px; border-radius: 8px; min-width: 90px; text-align: center; border: 1px solid #555; font-size: 11px; color: white; }
-#dungeon-list-container { flex-grow: 1; overflow-y: auto; padding: 15px; background: #1a1a2e; }
-.dungeon-card { width: 100%; padding: 15px; margin-bottom: 10px; background: #243b55; border-radius: 12px; border: 1px solid #4e4e4e; text-align: left; color: white; }
-.dungeon-card.unlocked { border-left: 5px solid var(--red); background: #2c4a70; cursor: pointer; }
-.dungeon-card.locked { opacity: 0.6; filter: grayscale(1); }
-
-/* 전투 화면 */
-#battle-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 9999; display: none; overflow: hidden; }
-#battle-camera { width: 100%; height: 100%; position: relative; overflow: hidden; }
-
-/* ★ 던전 타일 배경 ★ */
-#battle-world { 
-    width: 200vw; height: 200vh; 
-    position: absolute; left: 0; top: 0;
-    /* 타일 이미지가 있으면 url('tile.png')로 변경, 없으면 기본 그리드 */
-    background-image: radial-gradient(#333 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-color: #111;
-    background-repeat: repeat;
-    transform-origin: 0 0;
-}
-
-#player { position: absolute; font-size: 40px; transform: translate(-50%, -50%); z-index: 500; transition: none; display: flex; flex-direction: column; align-items: center; }
-.invincible { animation: blink 0.2s infinite; opacity: 0.5; }
-@keyframes blink { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
-#player-hp-bar-bg { width: 40px; height: 5px; background: #000; border: 1px solid #fff; margin-bottom: 2px; }
-#player-hp-bar-fill { height: 100%; background: #2ecc71; width: 100%; transition: width 0.1s; }
-.battle-enemy { position: absolute; font-size: 35px; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 400; }
-.battle-enemy.boss { font-size: 100px; z-index: 450; filter: drop-shadow(0 0 10px red); }
-.missile { position: absolute; font-size: 20px; transform: translate(-50%, -50%); z-index: 600; }
-#battle-ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
-#battle-header { position: absolute; top: 20px; width: 100%; text-align: center; color: white; text-shadow: 2px 2px 2px black; pointer-events: none; }
-#current-dungeon-name { font-size: 20px; font-weight: bold; display: block; }
-#wave-info { font-size: 16px; color: var(--red); font-weight: bold; }
-#war-weapon-slots { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 220px; height: 45px; background: rgba(0, 0, 0, 0.7); display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; padding: 5px; border-radius: 8px; pointer-events: none; border: 1px solid #444; }
-.war-slot { background: #1a1a2e; border: 1px solid #555; border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-.cd-overlay { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: rgba(0, 0, 0, 0.7); z-index: 3; transition: height 0.1s linear; }
-.war-slot.ready { border: 2px solid var(--gold); box-shadow: 0 0 5px var(--gold); }
-#joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; pointer-events: auto; touch-action: none; }
-#joystick-zone::before { content: "▲"; position: absolute; top: 5px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 12px; }
-#joystick-zone::after { content: "▼"; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 12px; }
-#joystick-knob { position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background: var(--gold); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 10px rgba(0,0,0,0.5); z-index: 10; }
-.hit-effect { position: fixed; pointer-events: none; z-index: 9999; font-size: 30px; font-weight: bold; color: white; text-shadow: 0 0 5px red; animation: fadeUp 0.4s forwards; }
-.dmg-text { position: absolute; color: yellow; font-weight: bold; font-size: 16px; animation: fadeUp 0.5s forwards; z-index: 900; text-shadow: 1px 1px 0 #000; }
-.gold-text { position: absolute; color: var(--gold); font-weight: bold; font-size: 20px; animation: popUp 0.8s forwards; z-index: 950; text-shadow: 1px 1px 0 #000; }
-@keyframes fadeUp { to { transform: translateY(-40px); opacity: 0; } }
-@keyframes popUp { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.5); opacity: 1; } 100% { transform: translateY(-50px) scale(1); opacity: 0; } }
-#dungeon-result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; }
-#result-content { background: #16213e; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); }
-.hp-bar-bg { width: 40px; height: 5px; background: #444; border: 1px solid #fff; margin-bottom: 2px; }
-.hp-bar-fill { height: 100%; background: #ff4d4d; transition: width 0.1s; }
-.missile { position: absolute; font-size: 25px; z-index: 5; text-shadow: 0 0 5px white; }
-.tooth-icon { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+/* 결과 모달 */
+#dungeon-result-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; color: white; }
+#result-content { background: #16213e; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; }
