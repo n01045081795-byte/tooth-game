@@ -1,7 +1,7 @@
-// Version: 5.0.0 - Relay Battle System & Boss Fix
+// Version: 5.1.0 - Boss Z-Index Fix & Smart Relay Logic
 let enemies = [];
 let missiles = [];
-let weaponCD = new Array(8).fill(0); // 기존 배열 호환용 (사용 안함)
+let weaponCD = new Array(8).fill(0); // 호환성 유지용
 let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
@@ -9,10 +9,9 @@ let dungeonActive = false;
 let dungeonGoldEarned = 0;
 let spawnTimeouts = []; 
 
-// ★ 릴레이 발사 시스템 변수 ★
-let activeSlotIndex = 0; // 현재 발사 차례인 슬롯 (0~7)
-let relayTimer = 0;      // 현재 슬롯의 쿨타임 게이지
-
+// 릴레이 시스템 변수
+let activeSlotIndex = 0; 
+let relayTimer = 0;      
 let bossDead = false; 
 
 let worldWidth = window.innerWidth * 2;
@@ -30,7 +29,7 @@ function startDungeon(idx) {
     enemies = []; missiles = []; dungeonActive = true;
     dungeonGoldEarned = 0;
     
-    // 릴레이 초기화
+    // 초기화
     activeSlotIndex = 0;
     relayTimer = 0;
     bossDead = false;
@@ -119,16 +118,18 @@ function updateCombat() {
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => { const d = Math.hypot(playerX - en.x, playerY - en.y); if (d < minDst) { minDst = d; nearest = en; } });
     
-    // ★ 릴레이 발사 로직 ★
-    // 현재 활성화된 슬롯의 쿨타임만 증가
+    // ★ 릴레이 발사 로직 개선 ★
     
     // 기본 60프레임(1초) ~ 만렙(90%감소) 시 6프레임(0.1초)
     const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
     const maxCD = Math.max(6, 60 * (1 - cdReductionPercent/100));
 
-    relayTimer++;
+    // 쿨타임 증가 (최대치까지만)
+    if (relayTimer < maxCD) {
+        relayTimer++;
+    }
     
-    // UI 업데이트: 현재 슬롯만 차오르는 모습 보여줌
+    // UI 업데이트
     for(let i=0; i<8; i++) {
         const slotEl = document.getElementById(`war-slot-${i}`);
         if(slotEl) {
@@ -136,29 +137,45 @@ function updateCombat() {
             if (i === activeSlotIndex) {
                 const percent = 100 - (relayTimer / maxCD * 100);
                 mask.style.height = `${Math.max(0, percent)}%`;
-                slotEl.style.border = '2px solid #00fbff'; // 현재 턴 강조
+                slotEl.style.border = '2px solid #00fbff';
+                if(relayTimer >= maxCD) {
+                    slotEl.style.background = 'rgba(0, 255, 0, 0.2)'; // 준비 완료 시각효과
+                } else {
+                    slotEl.style.background = '#1a1a2e';
+                }
             } else {
-                mask.style.height = '100%'; // 나머지는 대기 상태
+                mask.style.height = '100%';
                 slotEl.style.border = '1px solid #555';
+                slotEl.style.background = '#1a1a2e';
             }
         }
     }
 
-    // 쿨타임 완료 시 발사 시도
+    // 발사 조건 체크
     if (relayTimer >= maxCD) {
-        // 아이템이 있으면 발사
-        if (inventory[activeSlotIndex] > 0 && nearest && !bossDead) {
-            const maxRngLimit = worldWidth / 2;
-            const calcRng = 300 + (globalUpgrades.rng * 20);
-            const range = Math.min(maxRngLimit, calcRng);
-            
-            if (minDst <= range) {
-                shoot(activeSlotIndex, nearest);
+        // 1. 빈 슬롯인가? -> 페널티 받고 턴 넘기기
+        if (inventory[activeSlotIndex] === 0) {
+            relayTimer = 0;
+            activeSlotIndex = (activeSlotIndex + 1) % 8;
+        } 
+        // 2. 치아가 있는가?
+        else {
+            // 적이 있고, 사거리 내인가?
+            if (nearest && !bossDead) {
+                const maxRngLimit = worldWidth / 2;
+                const calcRng = 300 + (globalUpgrades.rng * 20);
+                const range = Math.min(maxRngLimit, calcRng);
+                
+                if (minDst <= range) {
+                    // 발사 성공! -> 턴 넘기기
+                    shoot(activeSlotIndex, nearest);
+                    relayTimer = 0;
+                    activeSlotIndex = (activeSlotIndex + 1) % 8;
+                }
+                // 사거리 밖이면? -> 아무것도 안함 (relayTimer 유지, activeSlotIndex 유지) == 대기
             }
+            // 적이 아예 없으면? -> 대기
         }
-        // 발사 여부와 상관없이 다음 슬롯으로 턴 넘김 (빈칸이면 턴 낭비)
-        relayTimer = 0;
-        activeSlotIndex = (activeSlotIndex + 1) % 8;
     }
 
     // 3. 미사일 처리
@@ -213,15 +230,19 @@ function createExplosion(x, y) {
     exp.style.left = x + 'px'; exp.style.top = y + 'px';
     exp.style.transform = 'translate(-50%, -50%)';
     exp.style.fontSize = '150px';
-    exp.style.zIndex = '2000';
+    exp.style.zIndex = '20000'; // 폭발도 최상위
     exp.style.textShadow = '0 0 20px red';
     exp.style.animation = 'popUp 1s ease-out';
     worldDiv.appendChild(exp);
     setTimeout(() => exp.remove(), 1000);
 }
 
+// ★ 보스 클리어 모달: Z-Index 강제 상향 ★
 function showResultModal() {
-    document.getElementById('dungeon-result-modal').style.display = 'flex';
+    const modal = document.getElementById('dungeon-result-modal');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999'; // 전투 화면(9999)보다 훨씬 높게 설정
+    
     document.getElementById('result-title').innerText = `${TOOTH_DATA.dungeons[currentDungeonIdx]} CLEAR!`;
     const next = TOOTH_DATA.dungeons[currentDungeonIdx + 1];
     document.getElementById('result-desc').innerHTML = `
