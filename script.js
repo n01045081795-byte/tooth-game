@@ -1,5 +1,6 @@
-// Version: 3.8.0 - Start 0 Gold & Exp Costs
-let gold = 0; // 시작 골드 0
+// script.js (전체 복사해서 덮어쓰세요)
+// Version: 3.8.1 - Mercenary UI & Fixes
+let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
 let autoMineLevel = 1;
@@ -19,7 +20,6 @@ let slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
 const dragProxy = document.getElementById('drag-proxy');
 let lastTapTime = 0; let lastTapIdx = -1;
 
-// 자동 채굴/합성 만렙 설정
 const MAX_AUTO_MINE_LV = 40;
 const MAX_AUTO_MERGE_LV = 15;
 
@@ -76,7 +76,6 @@ function renderShopItems() {
     content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
     const container = document.getElementById('shop-items-container');
     
-    // 1. 곡괭이 (Lv 표시 추가)
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
     if (pickNext) {
@@ -93,10 +92,8 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 2. 자동 채굴 (비용 지수 상승)
     const curSpd = Math.max(7, 15 - (autoMineLevel * 0.2)).toFixed(1);
     if (autoMineLevel < MAX_AUTO_MINE_LV) {
-        // 비용: 500 * (1.4 ^ (Lv-1))
         const autoCost = Math.floor(500 * Math.pow(1.4, autoMineLevel - 1));
         const nextSpd = Math.max(7, 15 - ((autoMineLevel+1) * 0.2)).toFixed(1);
         container.innerHTML += `
@@ -112,10 +109,8 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 3. 자동 합성 (비용 지수 상승)
     const curMerge = Math.max(10, 25 - autoMergeSpeedLevel).toFixed(1);
     if (autoMergeSpeedLevel < MAX_AUTO_MERGE_LV) {
-        // 비용: 1000 * (1.6 ^ (Lv-1))
         const mergeCost = Math.floor(1000 * Math.pow(1.6, autoMergeSpeedLevel - 1));
         const nextMerge = Math.max(10, 25 - (autoMergeSpeedLevel + 1)).toFixed(1);
         container.innerHTML += `
@@ -131,7 +126,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 4. 확장
     if (expansionCount < 4) {
         const expCost = TOOTH_DATA.invExpansion[expansionCount];
         container.innerHTML += `
@@ -185,7 +179,6 @@ function renderRefineView() {
     slotUpgrades.forEach((slot, idx) => {
         const card = document.createElement('div');
         card.className = 'refine-card';
-        // 제련 비용: 1000 * (1.3 ^ Lv)
         const costAtk = Math.floor(1000 * Math.pow(1.3, slot.atk));
         const costCd = Math.floor(1500 * Math.pow(1.3, slot.cd));
         const costRng = Math.floor(800 * Math.pow(1.3, slot.rng));
@@ -228,7 +221,6 @@ function upgradeSlot(idx, type, cost) {
     } else { alert("골드가 부족합니다!"); }
 }
 
-// ... (기존 유지) ...
 function sortInventory() { let items = inventory.filter(v => v > 0); items.sort((a, b) => b - a); inventory.fill(0); items.forEach((v, i) => { if(i < 56) inventory[i] = v; }); renderInventory(); saveGame(); }
 function autoMergeLowest() { let levelCounts = {}; for(let i=8; i<maxSlots; i++) { const lv = inventory[i]; if (lv > 0) levelCounts[lv] = (levelCounts[lv] || 0) + 1; } let targetLv = -1; const levels = Object.keys(levelCounts).map(Number).sort((a,b) => a - b); for (let lv of levels) { if (levelCounts[lv] >= 2) { targetLv = lv; break; } } if (targetLv !== -1) massMerge(targetLv, true); }
 function massMerge(lv, once = false) { let indices = []; inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < maxSlots) indices.push(idx); }); if(indices.length < 2) return; playSfx('merge'); const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const loopCount = once ? 1 : Math.floor(indices.length / 2); for(let i=0; i < loopCount; i++) { let idx1 = indices[2*i]; let idx2 = indices[2*i+1]; const isGreat = Math.random() < pick.luck * 0.5; const nextLv = isGreat ? lv + 2 : lv + 1; inventory[idx2] = nextLv; inventory[idx1] = 0; if(isGreat && currentView === 'mine') triggerGreatSuccess(idx2); } if(currentView === 'mine') renderInventory(); }
@@ -247,7 +239,41 @@ function checkCoupon() { const code = document.getElementById('coupon-input').va
 function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV380'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
 function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV380', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 function renderDungeonList() { const list = document.getElementById('dungeon-list'); list.innerHTML = ''; TOOTH_DATA.dungeons.forEach((name, idx) => { const div = document.createElement('div'); const isUnlocked = idx < unlockedDungeon; div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; if (isUnlocked) { div.innerHTML = `<h4>⚔️ Lv.${idx+1} ${name}</h4><p>권장 공격력: Lv.${idx+1}0+</p><p style="color:#f1c40f; font-size:10px;">클리어 시: Lv.${idx+2} 치아 확정 채굴</p>`; div.onclick = () => startDungeon(idx); } else { div.innerHTML = `<h4>🔒 잠김</h4><p>이전 던전 클리어 시 열림</p>`; } list.appendChild(div); }); }
-function renderMercenaryCamp() { const camp = document.getElementById('mercenary-list'); camp.innerHTML = ''; const maxOwned = Math.max(...ownedMercenaries); TOOTH_DATA.mercenaries.forEach(merc => { if (merc.id > maxOwned + 1) return; const div = document.createElement('div'); div.className = 'merc-card'; const isOwned = ownedMercenaries.includes(merc.id); const isEquipped = mercenaryIdx === merc.id; div.innerHTML = `<div style="font-size:25px;">${merc.icon}</div><div style="font-size:12px; font-weight:bold;">${merc.name}</div><div style="font-size:10px; color:#aaa;">공격 x${merc.atkMul}</div>`; if (isEquipped) div.style.border = '2px solid #2ecc71'; else if (isOwned) div.innerHTML += `<button onclick="equipMerc(${merc.id})" class="btn-sm">장착</button>`; else div.innerHTML += `<button onclick="buyMerc(${merc.id}, ${merc.cost})" class="btn-gold" style="padding:2px 5px; font-size:10px;">${fNum(merc.cost)}G</button>`; camp.appendChild(div); }); }
+
+// 용병 렌더링 수정: HP 표시 및 고용/장착 상태 구분
+function renderMercenaryCamp() { 
+    const camp = document.getElementById('mercenary-list'); 
+    camp.innerHTML = ''; 
+    const maxOwned = Math.max(...ownedMercenaries); 
+    
+    TOOTH_DATA.mercenaries.forEach(merc => { 
+        if (merc.id > maxOwned + 1) return; 
+        const div = document.createElement('div'); 
+        div.className = 'merc-card'; 
+        
+        const isOwned = ownedMercenaries.includes(merc.id); 
+        const isEquipped = mercenaryIdx === merc.id; 
+        
+        div.innerHTML = `
+            <div style="font-size:25px;">${merc.icon}</div>
+            <div style="font-size:12px; font-weight:bold;">${merc.name}</div>
+            <div style="font-size:10px; color:#aaa;">공격 x${merc.atkMul}</div>
+            <div style="font-size:10px; color:#f55;">HP ${merc.baseHp}</div>
+        `; 
+        
+        if (isEquipped) {
+            div.style.border = '2px solid #2ecc71'; 
+            div.innerHTML += `<button class="btn-sm" style="background:#2ecc71; color:white; cursor:default;">고용중</button>`;
+        } else if (isOwned) {
+            div.innerHTML += `<button onclick="equipMerc(${merc.id})" class="btn-sm" style="background:#777;">대기중</button>`; 
+        } else {
+            div.innerHTML += `<button onclick="buyMerc(${merc.id}, ${merc.cost})" class="btn-gold" style="padding:2px 5px; font-size:10px;">${fNum(merc.cost)}G</button>`; 
+        }
+        
+        camp.appendChild(div); 
+    }); 
+}
+
 function buyMerc(id, cost) { if(gold >= cost) { gold -= cost; ownedMercenaries.push(id); renderMercenaryCamp(); updateUI(); } else { alert("골드 부족"); } }
 function equipMerc(id) { mercenaryIdx = id; renderMercenaryCamp(); saveGame(); }
 function toggleSound() { isMuted = !isMuted; updateSoundBtn(); saveGame(); }
