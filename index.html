@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v3.6.0</title>
-    <link rel="stylesheet" href="style.css?v=3.6.0">
+    <title>치아 연대기 v5.5.0</title>
+    <link rel="stylesheet" href="style.css?v=5.5.0">
 </head>
 <body>
     <div id="game-container">
@@ -57,14 +57,14 @@
                         <button onclick="checkCoupon()" class="btn-sm" style="background:var(--gold); color:black;">확인</button>
                     </div>
                     <div class="cheat-group-right">
-                        <button onclick="exportSave()" class="btn-sm" style="background:#555;">저장</button>
+                        <button onclick="saveGame(); alert('저장완료');" class="btn-sm" style="background:#555;">저장</button>
                         <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
+                        <button onclick="openGuide()" class="btn-sm" style="background:#3498db; font-weight:bold;">📘설명</button>
                     </div>
                 </div>
             </div>
 
             <div id="refine-view" style="display:none;">
-                <h4 style="color:var(--gold); text-align:center; margin:10px 0;">🔥 Top 8 슬롯 고급 제련</h4>
                 <div class="refine-grid" id="refine-grid"></div>
             </div>
 
@@ -107,11 +107,33 @@
         </div>
     </div>
 
+    <div id="guide-modal" style="display:none;">
+        <div id="guide-content">
+            <h2 style="color:var(--gold); margin-top:0;">📘 치아 연대기 가이드</h2>
+            <div class="guide-scroll">
+                <h3>1. ⚡ 빠른 조작 꿀팁</h3>
+                <p>👉 <b>더블 탭:</b> 인벤토리의 치아를 빠르게 두 번 누르면, 같은 레벨의 모든 치아가 한 번에 합성됩니다.</p>
+                <p>👉 <b>다중 터치:</b> 손가락 2~3개로 광석을 동시에 두드리면 채굴 속도가 훨씬 빨라집니다!</p>
+                
+                <h3>2. ⚔️ 전투와 인벤토리</h3>
+                <p>🏰 <b>Top 8 (상단 빨간 테두리):</b> 이곳은 전투에 나갈 <b>최정예 치아</b>를 두는 곳입니다. 가장 높은 레벨을 배치하세요.</p>
+                <p>🚫 <b>보호 구역:</b> Top 8 칸은 실수를 막기 위해 <b>자동 합성이나 더블 탭 합성이 되지 않습니다.</b> 수동으로 관리해주세요.</p>
+                <p>🔫 <b>릴레이 전투:</b> 1번부터 8번 슬롯까지 순서대로 공격합니다. 중간에 <b>빈칸</b>이 있으면 턴을 넘기며 시간을 낭비하니 꽉 채우세요!</p>
+                
+                <h3>3. 💎 업그레이드</h3>
+                <p>🍀 <b>곡괭이:</b> 상위 레벨 치아를 얻을 <b>행운</b>이 증가합니다.</p>
+                <p>🔥 <b>제련:</b> 던전을 클리어하면 슬롯이 하나씩 열립니다. 쿨타임과 사거리를 강화해 기관총처럼 쏘세요!</p>
+                <p>🧹 <b>자동 청소:</b> 던전 레벨이 오르면, 더 이상 필요 없는 하위 치아는 자동으로 삭제됩니다.</p>
+            </div>
+            <button onclick="closeGuide()" class="btn-red" style="width:100%; margin-top:15px;">닫기</button>
+        </div>
+    </div>
+
     <div id="drag-proxy"></div>
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=3.6.0"></script>
-    <script src="battle.js?v=3.6.0"></script>
-    <script src="script.js?v=3.6.0"></script>
+    <script src="data.js?v=5.5.0"></script>
+    <script src="battle.js?v=5.5.0"></script>
+    <script src="script.js?v=5.5.0"></script>
 </body>
 </html>
