@@ -1,7 +1,7 @@
-// Version: 4.2.0 - Round Robin Fire & Boss Fix
+// Version: 5.0.0 - Relay Battle System & Boss Fix
 let enemies = [];
 let missiles = [];
-let weaponCD = new Array(8).fill(0);
+let weaponCD = new Array(8).fill(0); // 기존 배열 호환용 (사용 안함)
 let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
@@ -9,9 +9,11 @@ let dungeonActive = false;
 let dungeonGoldEarned = 0;
 let spawnTimeouts = []; 
 
-// ★ 순차 발사 포인터 (0~7) ★
-let fireCursor = 0; 
-let bossDead = false; // 보스 사망 후 연출 대기용 플래그
+// ★ 릴레이 발사 시스템 변수 ★
+let activeSlotIndex = 0; // 현재 발사 차례인 슬롯 (0~7)
+let relayTimer = 0;      // 현재 슬롯의 쿨타임 게이지
+
+let bossDead = false; 
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -27,7 +29,10 @@ function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
     dungeonGoldEarned = 0;
-    fireCursor = 0;
+    
+    // 릴레이 초기화
+    activeSlotIndex = 0;
+    relayTimer = 0;
     bossDead = false;
     
     spawnTimeouts.forEach(id => clearTimeout(id));
@@ -51,7 +56,7 @@ function startDungeon(idx) {
     document.getElementById('battle-world').appendChild(playerEl);
     
     playerMaxHp = currentMercenary.baseHp; playerHp = playerMaxHp; updatePlayerHpBar();
-    updatePlayerPos(); renderWarWeapons(); weaponCD.fill(0);
+    updatePlayerPos(); renderWarWeapons(); 
     spawnWave();
     if (!window.joystickInitialized) { setupJoystick(); window.joystickInitialized = true; }
     requestAnimationFrame(battleLoop);
@@ -99,7 +104,7 @@ function updateCamera() { const camX = playerX - window.innerWidth / 2; const ca
 function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
-    // 1. 적 이동 (보스 죽으면 멈춤)
+    // 1. 적 이동
     if (!bossDead) {
         enemies.forEach(en => {
             const dx = playerX - en.x; const dy = playerY - en.y;
@@ -111,51 +116,49 @@ function updateCombat() {
         });
     }
 
-    // 2. 발사 로직 (Round Robin)
     let nearest = null; let minDst = Infinity;
     enemies.forEach(en => { const d = Math.hypot(playerX - en.x, playerY - en.y); if (d < minDst) { minDst = d; nearest = en; } });
     
-    // 모든 무기 쿨타임 회복
-    for (let i = 0; i < 8; i++) {
-        // 기본 240프레임(4초) - (만렙 시 90% 감소 = 24프레임(0.4초))
-        const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
-        const maxCD = Math.max(24, 240 * (1 - cdReductionPercent/100));
-        
-        if (weaponCD[i] < maxCD) weaponCD[i]++;
+    // ★ 릴레이 발사 로직 ★
+    // 현재 활성화된 슬롯의 쿨타임만 증가
+    
+    // 기본 60프레임(1초) ~ 만렙(90%감소) 시 6프레임(0.1초)
+    const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
+    const maxCD = Math.max(6, 60 * (1 - cdReductionPercent/100));
 
+    relayTimer++;
+    
+    // UI 업데이트: 현재 슬롯만 차오르는 모습 보여줌
+    for(let i=0; i<8; i++) {
         const slotEl = document.getElementById(`war-slot-${i}`);
-        if (slotEl) {
+        if(slotEl) {
             const mask = slotEl.querySelector('.cd-overlay');
-            const percent = 100 - (weaponCD[i] / maxCD * 100);
-            mask.style.height = `${percent}%`;
-            if (weaponCD[i] >= maxCD) slotEl.classList.add('ready'); else slotEl.classList.remove('ready');
+            if (i === activeSlotIndex) {
+                const percent = 100 - (relayTimer / maxCD * 100);
+                mask.style.height = `${Math.max(0, percent)}%`;
+                slotEl.style.border = '2px solid #00fbff'; // 현재 턴 강조
+            } else {
+                mask.style.height = '100%'; // 나머지는 대기 상태
+                slotEl.style.border = '1px solid #555';
+            }
         }
     }
 
-    // ★ 순차 발사: fireCursor부터 시작해서 준비된 첫 번째 무기를 발사하고 종료 ★
-    if (nearest && !bossDead) {
-        for (let k = 0; k < 8; k++) {
-            // fireCursor에서 시작하여 8개 슬롯을 순환 체크
-            let idx = (fireCursor + k) % 8;
+    // 쿨타임 완료 시 발사 시도
+    if (relayTimer >= maxCD) {
+        // 아이템이 있으면 발사
+        if (inventory[activeSlotIndex] > 0 && nearest && !bossDead) {
+            const maxRngLimit = worldWidth / 2;
+            const calcRng = 300 + (globalUpgrades.rng * 20);
+            const range = Math.min(maxRngLimit, calcRng);
             
-            // 쿨타임 Max & 아이템 존재 체크
-            const cdReductionPercent = Math.min(90, globalUpgrades.cd * 2); 
-            const maxCD = Math.max(24, 240 * (1 - cdReductionPercent/100));
-
-            if (weaponCD[idx] >= maxCD && inventory[idx] > 0) {
-                const maxRngLimit = worldWidth / 2;
-                const calcRng = 300 + (globalUpgrades.rng * 20);
-                const range = Math.min(maxRngLimit, calcRng);
-                
-                if (minDst <= range) {
-                    shoot(idx, nearest);
-                    weaponCD[idx] = 0; // 발사했으니 쿨타임 초기화
-                    // ★ 중요: 다음 프레임에는 이 다음 슬롯부터 검사함 ★
-                    fireCursor = (idx + 1) % 8; 
-                    break; // 한 프레임에 하나만 발사 (기관총 효과)
-                }
+            if (minDst <= range) {
+                shoot(activeSlotIndex, nearest);
             }
         }
+        // 발사 여부와 상관없이 다음 슬롯으로 턴 넘김 (빈칸이면 턴 낭비)
+        relayTimer = 0;
+        activeSlotIndex = (activeSlotIndex + 1) % 8;
     }
 
     // 3. 미사일 처리
@@ -181,17 +184,14 @@ function updateCombat() {
                     showGoldText(en.x, en.y, gain);
                     
                     if (en.isBoss) {
-                        // ★ 보스 사망 처리: 플래그 켜고 1초 대기 ★
                         bossDead = true;
                         createExplosion(en.x, en.y);
                         en.el.remove();
                         enemies.splice(j, 1);
-                        
-                        // 1.5초 후 결과창 (게임 루프는 멈추지 않음 -> 연출 유지)
                         setTimeout(() => { 
                             showResultModal(); 
-                            dungeonActive = false; // 이때 멈춤
-                        }, 1500);
+                            dungeonActive = false;
+                        }, 1000);
                         return;
                     } else {
                         en.el.remove();
