@@ -1,4 +1,4 @@
-/* Version: 3.8.0 - Max Btn & Refine Text */
+/* Version: 5.5.0 - Guide & Locked Refine */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
@@ -37,7 +37,7 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 #inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; min-height: 0; }
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; padding-bottom: 20px; }
 
-/* ★ 제련 탭 스타일 업데이트 (수치 색상 추가) ★ */
+/* 제련 */
 #refine-view { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; background: #111; }
 .refine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
 .refine-card { background: #222; border: 1px solid var(--gold); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -47,7 +47,11 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
     font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center;
 }
 .refine-btn:active { background: #444; }
-.refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; } /* 업그레이드 수치 초록색 강조 */
+.refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; } 
+
+/* 잠긴 제련 슬롯 스타일 */
+.locked-refine { opacity: 0.5; pointer-events: none; filter: grayscale(1); border-color: #555; }
+.locked-refine .refine-header { color: #888; }
 
 /* 쿠폰창 */
 #cheat-section { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #222; margin: 0; border-top: 1px solid #444; flex-shrink: 0; width: 100%; height: 50px; }
@@ -67,10 +71,10 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 @keyframes shine { 0% { background: #fff; transform: scale(1.2); } 100% { background: #1a1a2e; transform: scale(1); } }
 #drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
 
-/* 버튼 스타일 (만렙 버튼 추가) */
+/* 버튼 스타일 */
 .btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; } /* 만렙 버튼 */
+.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; } 
 
 .btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
 .btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
@@ -82,6 +86,12 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; border: 1px solid #444; }
 .shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
 .shop-desc { font-size: 11px; color: #ddd; text-align: left; width: 100%; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
+
+/* 가이드 모달 */
+#guide-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; justify-content: center; align-items: center; }
+#guide-content { background: #222; width: 90%; max-height: 80vh; padding: 25px; border-radius: 15px; border: 2px solid #3498db; color: white; display: flex; flex-direction: column; }
+.guide-scroll { overflow-y: auto; flex-grow: 1; font-size: 13px; line-height: 1.6; text-align: left; }
+.guide-scroll h3 { color: #3498db; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 20px; }
 
 /* 던전 관련 */
 #war-view { display: none; flex-direction: column; height: 100%; }
