@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v3.9.0</title>
-    <link rel="stylesheet" href="style.css?v=3.9.0">
+    <title>치아 연대기 v3.9.1</title>
+    <link rel="stylesheet" href="style.css?v=3.9.1">
 </head>
 <body>
     <div id="game-container">
@@ -80,7 +80,7 @@
         </main>
     </div>
 
-    <div id="battle-screen">
+    <div id="battle-screen" style="display:none;">
         <div id="battle-camera">
             <div id="battle-world"></div>
         </div>
@@ -91,11 +91,17 @@
             </div>
             <button onclick="exitDungeon()" class="btn-exit">후퇴</button>
             <div id="war-weapon-slots"></div>
-            <div id="joystick-zone"><div id="joystick-knob"></div></div>
+            <div id="joystick-zone">
+                <div class="joy-dir joy-up">▲</div>
+                <div class="joy-dir joy-down">▼</div>
+                <div class="joy-dir joy-left">◀</div>
+                <div class="joy-dir joy-right">▶</div>
+                <div id="joystick-knob"></div>
+            </div>
         </div>
     </div>
 
-    <div id="dungeon-result-modal">
+    <div id="dungeon-result-modal" style="display:none;">
         <div id="result-content">
             <h2 id="result-title" style="color:var(--gold);">CLEAR!</h2>
             <p id="result-desc"></p>
