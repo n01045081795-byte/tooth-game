@@ -1,5 +1,5 @@
-/* Version: 3.8.0 - Max Btn & Refine Text */
-:root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
+/* Version: 3.9.0 - Mercenary UI & Tile Ready */
+:root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; --green: #2ecc71; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
 
@@ -37,7 +37,7 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 #inventory-scroll-area { flex-grow: 1; overflow-y: auto; background: var(--blue); margin: 0 10px; border-radius: 8px; border: 2px solid #000; min-height: 0; }
 #inventory-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; padding: 5px; padding-bottom: 20px; }
 
-/* ★ 제련 탭 스타일 업데이트 (수치 색상 추가) ★ */
+/* 제련 탭 */
 #refine-view { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding: 15px; background: #111; }
 .refine-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 20px; }
 .refine-card { background: #222; border: 1px solid var(--gold); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -47,7 +47,7 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
     font-size: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center;
 }
 .refine-btn:active { background: #444; }
-.refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; } /* 업그레이드 수치 초록색 강조 */
+.refine-val { color: #2ecc71; font-weight: bold; font-size: 9px; }
 
 /* 쿠폰창 */
 #cheat-section { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #222; margin: 0; border-top: 1px solid #444; flex-shrink: 0; width: 100%; height: 50px; }
@@ -67,10 +67,12 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 @keyframes shine { 0% { background: #fff; transform: scale(1.2); } 100% { background: #1a1a2e; transform: scale(1); } }
 #drag-proxy { position: fixed; z-index: 9999; pointer-events: none; display: none; font-size: 30px; opacity: 0.8; transform: translate(-50%, -50%); }
 
-/* 버튼 스타일 (만렙 버튼 추가) */
+/* 버튼 스타일 */
 .btn-gold { background: var(--gold); color: #000; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
 .btn-red { background: var(--red); color: #fff; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; } /* 만렙 버튼 */
+.btn-max { background: var(--gray); color: #333; font-weight: bold; padding: 10px; border-radius: 6px; border: none; cursor: not-allowed; }
+.btn-green { background: var(--green); color: #000; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: none; cursor: default; } /* 고용중 버튼 */
+.btn-gray { background: var(--gray); color: #333; font-weight: bold; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; } /* 대기 버튼 */
 
 .btn-sm { padding: 6px 12px; border: none; border-radius: 4px; color: #fff; background: #4e4e4e; cursor: pointer; font-size: 11px; white-space: nowrap; }
 .btn-toggle { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; width: 60px; }
@@ -83,7 +85,7 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
 .shop-desc { font-size: 11px; color: #ddd; text-align: left; width: 100%; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
 
-/* 던전 관련 */
+/* 던전 뷰 */
 #war-view { display: none; flex-direction: column; height: 100%; }
 #mercenary-camp { background: #222; padding: 10px; border-bottom: 1px solid #444; flex-shrink: 0; display: block; }
 #mercenary-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; min-height: 100px; }
@@ -96,7 +98,19 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 /* 전투 화면 */
 #battle-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; background: #000; z-index: 9999; display: none; overflow: hidden; }
 #battle-camera { width: 100%; height: 100%; position: relative; overflow: hidden; }
-#battle-world { width: 200vw; height: 200vh; position: absolute; left: 0; top: 0; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 40px 40px; background-color: #111; transform-origin: 0 0; }
+
+/* ★ 던전 타일 배경 ★ */
+#battle-world { 
+    width: 200vw; height: 200vh; 
+    position: absolute; left: 0; top: 0;
+    /* 타일 이미지가 있으면 url('tile.png')로 변경, 없으면 기본 그리드 */
+    background-image: radial-gradient(#333 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-color: #111;
+    background-repeat: repeat;
+    transform-origin: 0 0;
+}
+
 #player { position: absolute; font-size: 40px; transform: translate(-50%, -50%); z-index: 500; transition: none; display: flex; flex-direction: column; align-items: center; }
 .invincible { animation: blink 0.2s infinite; opacity: 0.5; }
 @keyframes blink { 0% { opacity: 0.3; } 100% { opacity: 0.8; } }
