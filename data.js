@@ -1,11 +1,11 @@
-// Version: 5.0.0 - Relay Battle & Pickaxe Simple Luck
+// Version: 5.5.0 - Early Game Ease & Pickaxe Luck
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
-    // 곡괭이: Luck (상위 레벨 채굴 확률) 전용, 더블/대성공 삭제
+    // 곡괭이: 가격 조정 (초반 완화)
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, luck: 0, icon: "🪵" },
-        { name: "무딘 구리 곡괭이", cost: 500, luck: 0.10, icon: "🪨" },
-        { name: "튼튼한 철 곡괭이", cost: 2500, luck: 0.20, icon: "⛏️" },
+        { name: "무딘 구리 곡괭이", cost: 300, luck: 0.10, icon: "🪨" }, // 500 -> 300
+        { name: "튼튼한 철 곡괭이", cost: 2000, luck: 0.20, icon: "⛏️" }, // 2500 -> 2000
         { name: "연마된 강철 곡괭이", cost: 15000, luck: 0.30, icon: "⚔️" },
         { name: "빛나는 황금 곡괭이", cost: 100000, luck: 0.40, icon: "⚜️" },
         { name: "고강도 티타늄 곡괭이", cost: 800000, luck: 0.50, icon: "💠" },
@@ -13,9 +13,10 @@ const TOOTH_DATA = {
         { name: "카본 초합금 곡괭이", cost: 50000000, luck: 0.70, icon: "🔮" },
         { name: "신화의 오리할콘 곡괭이", cost: 1000000000, luck: 0.80, icon: "👑" }
     ],
+    // 용병: 가격 조정
     mercenaries: [
         { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, baseHp: 100, spd: 1.0, icon: "👨‍🌾" },
-        { id: 1, name: "마을 경비병", cost: 800, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
+        { id: 1, name: "마을 경비병", cost: 500, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" }, // 800 -> 500
         { id: 2, name: "견습 검사", cost: 3000, atkMul: 1.5, baseHp: 200, spd: 1.2, icon: "🤺" },
         { id: 3, name: "숙련된 사냥꾼", cost: 12000, atkMul: 1.8, baseHp: 180, spd: 1.3, icon: "🏹" },
         { id: 4, name: "왕국 기사", cost: 50000, atkMul: 2.2, baseHp: 300, spd: 1.1, icon: "💂‍♂️" },
@@ -45,7 +46,6 @@ const TOOTH_DATA = {
     invExpansion: [2000, 20000, 200000, 2000000]
 };
 
-// Web Audio API
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration, vol = 0.1) {
     if (audioCtx.state === 'suspended') audioCtx.resume();
