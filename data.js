@@ -1,7 +1,7 @@
-// Version: 4.2.0 - Pickaxe Simple Luck & New Balance
+// Version: 5.0.0 - Relay Battle & Pickaxe Simple Luck
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
-    // 곡괭이: Luck (상위 레벨 확률) 전용, 더블/대성공 삭제
+    // 곡괭이: Luck (상위 레벨 채굴 확률) 전용, 더블/대성공 삭제
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, luck: 0, icon: "🪵" },
         { name: "무딘 구리 곡괭이", cost: 500, luck: 0.10, icon: "🪨" },
