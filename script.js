@@ -1,4 +1,4 @@
-// Version: 4.1.0 - Reset Fix, Amulet, Max Caps
+// Version: 4.2.0 - Reset Fix, Amulet, Max Caps, Simple Pick
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -16,10 +16,9 @@ let autoMergeSpeedLevel = 1;
 let isMuted = false;
 let slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
 let globalUpgrades = { cd: 0, rng: 0 };
-// ★ 신규: 합성 대성공 확률 레벨 (Lv.0 ~ 25) ★
-let greatChanceLevel = 0;
+let greatChanceLevel = 0; // 합성 대성공 레벨
 
-// ★ 리셋 중인지 확인하는 플래그 (버그 수정용) ★
+// ★ 리셋 중 저장 방지용 플래그 ★
 let isResetting = false;
 
 const dragProxy = document.getElementById('drag-proxy');
@@ -27,27 +26,26 @@ let lastTapTime = 0; let lastTapIdx = -1;
 
 const MAX_AUTO_MINE_LV = 40;
 const MAX_AUTO_MERGE_LV = 15;
-const MAX_GREAT_LV = 25; // 부적 만렙
-const MAX_GLOBAL_CD = 40; // 쿨타임 만렙 (80%)
+const MAX_GREAT_LV = 25; // 부적 만렙 (50%)
+const MAX_GLOBAL_CD = 45; // 쿨타임 만렙 (90%)
 const MAX_GLOBAL_RNG = 50; // 사거리 만렙
 
 function saveGame() {
-    // ★ 리셋 중이면 저장하지 않음 (데이터 부활 방지) ★
-    if (isResetting) return;
+    if (isResetting) return; // 리셋 중이면 저장 안함
 
     const data = { 
         gold, maxSlots, inventory, unlockedDungeon, pickaxeIdx, autoMineLevel,
         mercenaryIdx, ownedMercenaries, autoMergeSpeedLevel, isMuted,
-        slotUpgrades, globalUpgrades, greatChanceLevel, // 부적 레벨 저장
+        slotUpgrades, globalUpgrades, greatChanceLevel,
         lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV410', JSON.stringify(data));
+    localStorage.setItem('toothSaveV420', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV410');
+    const saved = localStorage.getItem('toothSaveV420');
     // 하위 호환성 체크
-    const legacy = localStorage.getItem('toothSaveV400') || localStorage.getItem('toothSaveV390');
+    const legacy = localStorage.getItem('toothSaveV410') || localStorage.getItem('toothSaveV400') || localStorage.getItem('toothSaveV390');
     
     let d = null;
     if (saved) d = JSON.parse(saved);
@@ -66,7 +64,6 @@ function loadGame() {
         
         if (d.slotUpgrades && Array.isArray(d.slotUpgrades)) slotUpgrades = d.slotUpgrades;
         if (d.globalUpgrades) globalUpgrades = d.globalUpgrades;
-        // 신규 데이터 로드
         if (d.greatChanceLevel) greatChanceLevel = d.greatChanceLevel;
         
         if (!isMiningPaused && d.lastTime) {
@@ -106,7 +103,7 @@ function renderShopItems() {
     content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
     const container = document.getElementById('shop-items-container');
     
-    // 1. 곡괭이 (행운만 표시)
+    // 1. 곡괭이 (Luck Only)
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
     if (pickNext) {
@@ -125,8 +122,8 @@ function renderShopItems() {
         </div>`;
     }
 
-    // 2. ★ 신규: 합성의 부적 (대성공 확률) ★
-    const curGreat = greatChanceLevel * 2; // 레벨당 2%
+    // 2. 합성의 부적
+    const curGreat = greatChanceLevel * 2; 
     if (greatChanceLevel < MAX_GREAT_LV) {
         const amuletCost = Math.floor(5000 * Math.pow(1.5, greatChanceLevel));
         container.innerHTML += `
@@ -235,12 +232,12 @@ function renderRefineView() {
     const grid = document.getElementById('refine-grid');
     if (!grid) return;
     
-    // ★ MAX 체크 및 버튼 비활성화 처리 ★
-    const costGlobalCd = Math.floor(5000 * Math.pow(1.5, globalUpgrades.cd));
-    const costGlobalRng = Math.floor(3000 * Math.pow(1.5, globalUpgrades.rng));
+    // ★ 비용 상향 (1.8제곱) 및 만렙 (Lv.45/50) 처리 ★
+    const costGlobalCd = Math.floor(5000 * Math.pow(1.8, globalUpgrades.cd));
+    const costGlobalRng = Math.floor(3000 * Math.pow(1.8, globalUpgrades.rng));
     
-    const curCdReduc = Math.min(80, globalUpgrades.cd * 2);
-    const nextCdReduc = Math.min(80, (globalUpgrades.cd + 1) * 2);
+    const curCdReduc = Math.min(90, globalUpgrades.cd * 2);
+    const nextCdReduc = Math.min(90, (globalUpgrades.cd + 1) * 2);
     const curRngVal = globalUpgrades.rng;
     
     const isCdMax = globalUpgrades.cd >= MAX_GLOBAL_CD;
@@ -252,7 +249,7 @@ function renderRefineView() {
         <div style="display:flex; gap:10px;">
             ${isCdMax ? 
                 `<button class="btn-sm" style="flex:1; height:60px; background:#444; color:#888; cursor:default;">
-                    ⏳ 전체 쿨타임 (MAX)<br>-80% (최대)
+                    ⏳ 전체 쿨타임 (MAX)<br>-90% (최대)
                 </button>` : 
                 `<button onclick="upgradeGlobal('cd', ${costGlobalCd})" class="btn-sm" style="flex:1; height:60px; background:#34495e;">
                     ⏳ 전체 쿨타임 Lv.${globalUpgrades.cd}<br>
@@ -320,7 +317,6 @@ function upgradeSlot(idx, type, cost) {
 function sortInventory() { let items = inventory.filter(v => v > 0); items.sort((a, b) => b - a); inventory.fill(0); items.forEach((v, i) => { if(i < 56) inventory[i] = v; }); renderInventory(); saveGame(); }
 function autoMergeLowest() { let levelCounts = {}; for(let i=8; i<maxSlots; i++) { const lv = inventory[i]; if (lv > 0) levelCounts[lv] = (levelCounts[lv] || 0) + 1; } let targetLv = -1; const levels = Object.keys(levelCounts).map(Number).sort((a,b) => a - b); for (let lv of levels) { if (levelCounts[lv] >= 2) { targetLv = lv; break; } } if (targetLv !== -1) massMerge(targetLv, true); }
 
-// ★ 합성: 부적의 확률 사용 (greatChanceLevel * 2%) ★
 function massMerge(lv, once = false) { 
     let indices = []; 
     inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < maxSlots) indices.push(idx); }); 
@@ -345,7 +341,6 @@ function massMerge(lv, once = false) {
     if(currentView === 'mine') renderInventory(); 
 }
 
-// ★ 채굴: 곡괭이 Luck만 사용 ★
 function addMinedItem() { 
     cleanupInventory();
     let emptyIdx = -1; 
@@ -356,7 +351,7 @@ function addMinedItem() {
     const baseLv = unlockedDungeon; 
     
     let resultLv = baseLv;
-    if (Math.random() < pick.luck) resultLv += 1; // 상위 채굴 확률
+    if (Math.random() < pick.luck) resultLv += 1; 
     
     inventory[emptyIdx] = resultLv;
 
@@ -376,7 +371,6 @@ function updatePickaxeVisual() { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; d
 function createHitEffect(x, y) { const effect = document.createElement('div'); effect.className = 'hit-effect'; effect.innerText = "💥"; effect.style.left = x + 'px'; effect.style.top = y + 'px'; document.body.appendChild(effect); setTimeout(() => effect.remove(), 400); }
 function setupMiningTouch() { const mineArea = document.getElementById('mine-rock-area'); mineArea.addEventListener('pointerdown', (e) => { e.preventDefault(); const miner = document.getElementById('miner-char'); miner.style.animation = 'none'; miner.offsetHeight; miner.style.animation = 'hammer 0.08s ease-in-out'; playSfx('mine'); processMining(15); createHitEffect(e.clientX, e.clientY); }); }
 
-// ★ 리셋 버그 수정 적용 ★
 function checkCoupon() { 
     const code = document.getElementById('coupon-input').value.trim(); 
     if (code === "100b" || code === "RICH100B") { 
@@ -389,19 +383,16 @@ function checkCoupon() {
     }
     else if (code === "RESET") {
         if(confirm("정말 초기화 하시겠습니까?")) {
-            isResetting = true; // 저장 방지 깃발
-            localStorage.removeItem('toothSaveV410');
-            localStorage.removeItem('toothSaveV400');
-            localStorage.removeItem('toothSaveV390');
-            localStorage.removeItem('toothSaveV380');
+            isResetting = true; 
+            localStorage.clear();
             location.reload();
         }
     }
     else { alert("유효하지 않은 쿠폰입니다."); } 
 }
 
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV410'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV410', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV420'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV420', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 
 function renderDungeonList() { 
     const list = document.getElementById('dungeon-list'); 
