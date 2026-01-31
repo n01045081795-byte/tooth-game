@@ -1,4 +1,4 @@
-// Version: 6.0.0 - Themes & Mobs
+// Version: 6.5.0 - Battle System (Stable)
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -12,9 +12,8 @@ let spawnTimeouts = [];
 let activeSlotIndex = 0; 
 let relayTimer = 0;      
 let bossDead = false; 
-let currentTheme = ''; // 현재 던전 테마 클래스
+let currentTheme = ''; 
 
-// FPS 제한
 let lastFrameTime = 0;
 const FPS = 60;
 const frameInterval = 1000 / FPS;
@@ -52,7 +51,6 @@ function startDungeon(idx) {
     document.getElementById('battle-screen').style.display = 'block';
     document.getElementById('current-dungeon-name').innerText = TOOTH_DATA.dungeons[idx];
     
-    // ★ 배경 테마 적용 ★
     const mobData = TOOTH_DATA.dungeonMobs[idx] || TOOTH_DATA.dungeonMobs[0];
     currentTheme = mobData.theme;
     document.getElementById('battle-world').className = currentTheme; 
@@ -98,13 +96,11 @@ function spawnEnemy(isBoss = false) {
     const en = document.createElement('div');
     en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy';
     
-    // ★ 던전 고유 몬스터 적용 ★
     const mobData = TOOTH_DATA.dungeonMobs[currentDungeonIdx] || TOOTH_DATA.dungeonMobs[0];
     let icon = '';
     if (isBoss) {
         icon = mobData.boss;
     } else {
-        // 일반 몬스터 랜덤 선택
         const r = Math.floor(Math.random() * mobData.mobs.length);
         icon = mobData.mobs[r];
     }
