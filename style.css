@@ -1,4 +1,4 @@
-/* Version: 6.5.0 - Ranking & Nickname */
+/* Version: 6.6.0 - 4-Column Ranking */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
@@ -74,7 +74,7 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 
 /* 상점 & 모달 */
 #shop-modal, #guide-modal, #ranking-modal, #nickname-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
-#nickname-modal { z-index: 3000; } /* 닉네임 설정은 최상위 */
+#nickname-modal { z-index: 3000; } 
 #shop-content, #guide-content, #ranking-content, #nickname-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; max-height: 80vh; border: 2px solid var(--gold); overflow-y: auto; color: white; }
 .shop-item { margin-bottom: 12px; padding: 15px; background: #0f3460; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: white; border: 1px solid #444; }
 .shop-info { display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: bold; color: var(--gold); }
@@ -82,9 +82,10 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 .guide-scroll { overflow-y: auto; flex-grow: 1; font-size: 13px; line-height: 1.6; text-align: left; max-height: 50vh; }
 .guide-scroll h3 { color: #3498db; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 20px; }
 
-/* 랭킹 스타일 */
-.ranking-header { display: grid; grid-template-columns: 1fr 3fr 2fr; padding: 5px; border-bottom: 2px solid #555; font-weight: bold; color: #aaa; margin-bottom: 10px; font-size: 12px; }
-.rank-row { display: grid; grid-template-columns: 1fr 3fr 2fr; padding: 8px 5px; border-bottom: 1px solid #333; font-size: 13px; align-items: center; }
+/* 랭킹 스타일 수정: 4컬럼 */
+.ranking-header { display: grid; grid-template-columns: 1fr 2fr 1fr 2fr; padding: 5px; border-bottom: 2px solid #555; font-weight: bold; color: #aaa; margin-bottom: 10px; font-size: 11px; text-align: center; }
+.rank-row { display: grid; grid-template-columns: 1fr 2fr 1fr 2fr; padding: 8px 5px; border-bottom: 1px solid #333; font-size: 12px; align-items: center; text-align: center; }
+.rank-row span:nth-child(2) { text-align: left; padding-left: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rank-row:nth-child(even) { background: rgba(255,255,255,0.05); }
 .rank-row.my-rank { border: 2px solid var(--gold); background: rgba(241, 196, 15, 0.2); font-weight: bold; color: var(--gold); }
 .rank-row.top1 { color: #ffd700; text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
