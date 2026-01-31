@@ -1,4 +1,4 @@
-// Version: 3.7.0 - Boss Instant Clear Fix
+// Version: 3.8.0 - Single Boss & Instant Clear
 let enemies = [];
 let missiles = [];
 let weaponCD = new Array(8).fill(0);
@@ -6,6 +6,7 @@ let currentDungeonIdx = 0;
 let currentWave = 1;
 let isBossWave = false;
 let dungeonActive = false;
+let dungeonGoldEarned = 0; // 획득 골드 집계
 
 let worldWidth = window.innerWidth * 2;
 let worldHeight = window.innerHeight * 2;
@@ -20,10 +21,11 @@ let fireIndex = 0;
 let fireTimer = 0;
 const FIRE_RATE = 200;
 
-// ... (기존 startDungeon, updateMercenary 등 유지) ...
 function startDungeon(idx) {
     currentDungeonIdx = idx; currentWave = 1; isBossWave = false;
     enemies = []; missiles = []; dungeonActive = true;
+    dungeonGoldEarned = 0;
+    
     worldWidth = window.innerWidth * 2; worldHeight = window.innerHeight * 2;
     playerX = worldWidth / 2; playerY = worldHeight / 2;
     
@@ -45,6 +47,38 @@ function startDungeon(idx) {
     if (!window.joystickInitialized) { setupJoystick(); window.joystickInitialized = true; }
     requestAnimationFrame(battleLoop);
 }
+
+function updateMercenary() { if (!TOOTH_DATA.mercenaries[mercenaryIdx]) mercenaryIdx = 0; currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx]; }
+function updatePlayerHpBar() { const fill = document.getElementById('player-hp-bar-fill'); if (fill) fill.style.width = (playerHp / playerMaxHp * 100) + '%'; }
+function updatePlayerPos() { const p = document.getElementById('player'); if(p) { p.style.left = playerX + 'px'; p.style.top = playerY + 'px'; } }
+
+function spawnWave() {
+    if (!dungeonActive) return;
+    document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`;
+    const count = isBossWave ? 1 : 5 + (currentWave * 2);
+    for (let i = 0; i < count; i++) {
+        setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 800);
+    }
+}
+
+function spawnEnemy(isBoss = false) {
+    const worldDiv = document.getElementById('battle-world');
+    const en = document.createElement('div');
+    en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy';
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.min(worldWidth, worldHeight) / 2 - 50;
+    let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist;
+    const baseHp = 100 * Math.pow(2.5, currentDungeonIdx);
+    const maxHp = baseHp * (isBoss ? 30 : 1);
+    en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`;
+    en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); 
+    enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp });
+}
+
+function battleLoop() { if (!dungeonActive) return; updatePlayerMovement(); updateCamera(); updateCombat(); requestAnimationFrame(battleLoop); }
+function updatePlayerMovement() { if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return; const speed = 5 * (currentMercenary.spd || 1.0); playerX += moveX * speed; playerY += moveY * speed; playerX = Math.max(20, Math.min(worldWidth - 20, playerX)); playerY = Math.max(20, Math.min(worldHeight - 20, playerY)); updatePlayerPos(); const char = document.getElementById('player-char'); if(char) char.style.transform = moveX < 0 ? 'scaleX(-1)' : 'scaleX(1)'; }
+function updateCamera() { const camX = playerX - window.innerWidth / 2; const camY = playerY - window.innerHeight / 2; document.getElementById('battle-world').style.transform = `translate(${-camX}px, ${-camY}px)`; }
+function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
 
 function updateCombat() {
     // 1. 적 이동 및 충돌
@@ -95,17 +129,16 @@ function updateCombat() {
                 if (en.hp <= 0) {
                     const gain = (currentDungeonIdx + 1) * 100;
                     gold += gain;
+                    dungeonGoldEarned += gain;
                     showGoldText(en.x, en.y, gain);
                     
-                    // ★ 보스 즉시 클리어 로직 수정 ★
+                    // ★ 보스 즉시 클리어 및 종료 ★
                     if (en.isBoss) {
                         en.el.remove();
-                        enemies.splice(j, 1); // 보스 삭제
-                        // 남은 적 싹 지우고 결과창
-                        enemies.forEach(e => e.el.remove());
-                        enemies = [];
-                        showResultModal(); // 즉시 호출
-                        return; // 루프 종료
+                        enemies.splice(j, 1);
+                        dungeonActive = false; // 정지
+                        showResultModal();
+                        return;
                     } else {
                         en.el.remove();
                         enemies.splice(j, 1);
@@ -118,21 +151,22 @@ function updateCombat() {
     }
 }
 
-// ... (기존 함수들: updateMercenary, updatePlayerHpBar, updatePlayerPos, spawnWave, spawnEnemy, battleLoop, updatePlayerMovement, updateCamera, takeDamage, shoot, showDmgText, showGoldText, renderWarWeapons, setupJoystick, exitDungeon, closeResultModal) ...
-function updateMercenary() { if (!TOOTH_DATA.mercenaries[mercenaryIdx]) mercenaryIdx = 0; currentMercenary = TOOTH_DATA.mercenaries[mercenaryIdx]; }
-function updatePlayerHpBar() { const fill = document.getElementById('player-hp-bar-fill'); if (fill) fill.style.width = (playerHp / playerMaxHp * 100) + '%'; }
-function updatePlayerPos() { const p = document.getElementById('player'); if(p) { p.style.left = playerX + 'px'; p.style.top = playerY + 'px'; } }
-function spawnWave() { if (!dungeonActive) return; document.getElementById('wave-info').innerText = isBossWave ? "☠️ BOSS ☠️" : `WAVE ${currentWave}/5`; const count = isBossWave ? 1 : 5 + (currentWave * 2); for (let i = 0; i < count; i++) { setTimeout(() => { if(dungeonActive) spawnEnemy(isBossWave); }, i * 800); } }
-function spawnEnemy(isBoss = false) { const worldDiv = document.getElementById('battle-world'); const en = document.createElement('div'); en.className = isBoss ? 'battle-enemy boss' : 'battle-enemy'; const angle = Math.random() * Math.PI * 2; const dist = Math.min(worldWidth, worldHeight) / 2 - 50; let sx = (worldWidth / 2) + Math.cos(angle) * dist; let sy = (worldHeight / 2) + Math.sin(angle) * dist; const baseHp = 100 * Math.pow(2.5, currentDungeonIdx); const maxHp = baseHp * (isBoss ? 30 : 1); en.innerHTML = `<div class="hp-bar-bg"><div class="hp-bar-fill" style="width:100%"></div></div><span>${isBoss ? '🐉' : '👾'}</span>`; en.style.left = sx + 'px'; en.style.top = sy + 'px'; worldDiv.appendChild(en); enemies.push({ el: en, hpFill: en.querySelector('.hp-bar-fill'), x: sx, y: sy, isBoss, hp: maxHp, maxHp: maxHp }); }
-function battleLoop() { if (!dungeonActive) return; updatePlayerMovement(); updateCamera(); updateCombat(); requestAnimationFrame(battleLoop); }
-function updatePlayerMovement() { if (Math.abs(moveX) < 0.1 && Math.abs(moveY) < 0.1) return; const speed = 5 * (currentMercenary.spd || 1.0); playerX += moveX * speed; playerY += moveY * speed; playerX = Math.max(20, Math.min(worldWidth - 20, playerX)); playerY = Math.max(20, Math.min(worldHeight - 20, playerY)); updatePlayerPos(); const char = document.getElementById('player-char'); if(char) char.style.transform = moveX < 0 ? 'scaleX(-1)' : 'scaleX(1)'; }
-function updateCamera() { const camX = playerX - window.innerWidth / 2; const camY = playerY - window.innerHeight / 2; document.getElementById('battle-world').style.transform = `translate(${-camX}px, ${-camY}px)`; }
-function takeDamage(amount) { playerHp -= amount; updatePlayerHpBar(); playSfx('damage'); isInvincible = true; const p = document.getElementById('player'); p.classList.add('invincible'); setTimeout(() => { isInvincible = false; p.classList.remove('invincible'); }, 1000); if (playerHp <= 0) { alert("용병이 쓰러졌습니다!"); exitDungeon(); } }
+function showResultModal() {
+    document.getElementById('dungeon-result-modal').style.display = 'flex';
+    document.getElementById('result-title').innerText = `${TOOTH_DATA.dungeons[currentDungeonIdx]} CLEAR!`;
+    const next = TOOTH_DATA.dungeons[currentDungeonIdx + 1];
+    document.getElementById('result-desc').innerHTML = `
+        획득 골드: <span style="color:yellow;">${fNum(dungeonGoldEarned)}G</span><br>
+        ${next ? `다음 던전: ${next} 오픈!` : "모든 던전을 정복했습니다!"}
+    `;
+    if (unlockedDungeon <= currentDungeonIdx + 1) unlockedDungeon = currentDungeonIdx + 2;
+    saveGame();
+}
+
 function shoot(slotIdx, target) { playSfx('attack'); const worldDiv = document.getElementById('battle-world'); const mEl = document.createElement('div'); mEl.className = 'missile'; mEl.innerHTML = getToothIcon(inventory[slotIdx]); worldDiv.appendChild(mEl); const angle = Math.atan2(target.y - playerY, target.x - playerX); const speed = 18; let refineMul = 1 + (slotUpgrades[slotIdx].atk * 0.1); const dmg = getAtk(inventory[slotIdx]) * currentMercenary.atkMul * refineMul; missiles.push({ el: mEl, x: playerX, y: playerY, startX: playerX, startY: playerY, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, dmg: dmg }); }
 function showDmgText(x, y, dmg) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'dmg-text'; txt.innerText = fNum(dmg); txt.style.left = x + 'px'; txt.style.top = (y - 40) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 500); }
 function showGoldText(x, y, val) { const worldDiv = document.getElementById('battle-world'); const txt = document.createElement('div'); txt.className = 'gold-text'; txt.innerText = `💰+${fNum(val)}`; txt.style.left = x + 'px'; txt.style.top = (y - 50) + 'px'; worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 800); }
 function checkWaveClear() { if (enemies.length === 0) { if (isBossWave) { showResultModal(); } else { currentWave++; if (currentWave > 5) isBossWave = true; spawnWave(); } } }
-function showResultModal() { dungeonActive = false; document.getElementById('dungeon-result-modal').style.display = 'flex'; document.getElementById('result-title').innerText = `${TOOTH_DATA.dungeons[currentDungeonIdx]} CLEAR!`; const next = TOOTH_DATA.dungeons[currentDungeonIdx + 1]; document.getElementById('result-desc').innerText = next ? `다음: ${next} 오픈!` : "정복 완료!"; if (unlockedDungeon <= currentDungeonIdx + 1) unlockedDungeon = currentDungeonIdx + 2; saveGame(); }
 function closeResultModal() { document.getElementById('dungeon-result-modal').style.display = 'none'; exitDungeon(); }
 function exitDungeon() { dungeonActive = false; enemies.forEach(en => en.el.remove()); missiles.forEach(m => m.el.remove()); enemies = []; missiles = []; document.getElementById('battle-screen').style.display = 'none'; document.getElementById('game-container').style.display = 'flex'; document.getElementById('top-nav').style.display = 'grid'; if(window.renderDungeonList) window.renderDungeonList(); }
 function renderWarWeapons() { const container = document.getElementById('war-weapon-slots'); container.innerHTML = ''; for (let i = 0; i < 8; i++) { const slot = document.createElement('div'); slot.className = 'war-slot'; slot.id = `war-slot-${i}`; slot.innerHTML = `<div class="cd-overlay"></div>` + getToothIcon(inventory[i]); container.appendChild(slot); } }
