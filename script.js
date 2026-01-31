@@ -1,4 +1,4 @@
-// Version: 3.9.0 - Global Refine & Boss Clear Logic
+// Version: 4.0.0 - Auto Trash & New Pickaxe Logic
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -14,9 +14,7 @@ let ownedMercenaries = [0];
 let mergeProgress = 0;
 let autoMergeSpeedLevel = 1; 
 let isMuted = false;
-// 슬롯별 공격력은 유지, cd/rng는 사용하지 않지만 호환성을 위해 구조 유지
 let slotUpgrades = Array.from({length: 8}, () => ({ atk: 0, cd: 0, rng: 0 }));
-// ★ 신규: 글로벌 업그레이드 (쿨타임, 사거리)
 let globalUpgrades = { cd: 0, rng: 0 };
 
 const dragProxy = document.getElementById('drag-proxy');
@@ -31,17 +29,19 @@ function saveGame() {
         mercenaryIdx, ownedMercenaries, autoMergeSpeedLevel, isMuted,
         slotUpgrades, globalUpgrades, lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV390', JSON.stringify(data));
+    localStorage.setItem('toothSaveV400', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV390');
-    // 하위 호환성 (V380 데이터 로드 시도)
-    const legacy = localStorage.getItem('toothSaveV380');
+    const saved = localStorage.getItem('toothSaveV400');
+    // 하위 호환성 (V390/V380 데이터 로드 시도)
+    const legacy390 = localStorage.getItem('toothSaveV390');
+    const legacy380 = localStorage.getItem('toothSaveV380');
     
     let d = null;
     if (saved) d = JSON.parse(saved);
-    else if (legacy) d = JSON.parse(legacy);
+    else if (legacy390) d = JSON.parse(legacy390);
+    else if (legacy380) d = JSON.parse(legacy380);
 
     if (d) {
         gold = d.gold !== undefined ? d.gold : 0; 
@@ -55,7 +55,6 @@ function loadGame() {
         isMuted = d.isMuted || false;
         
         if (d.slotUpgrades && Array.isArray(d.slotUpgrades)) slotUpgrades = d.slotUpgrades;
-        // 글로벌 업그레이드 로드
         if (d.globalUpgrades) globalUpgrades = d.globalUpgrades;
         
         if (!isMiningPaused && d.lastTime) {
@@ -71,8 +70,24 @@ function loadGame() {
             }
         }
     }
+    // ★ 게임 로드 시 악성 재고 청소 ★
+    cleanupInventory();
     updateSoundBtn();
     updatePickaxeVisual();
+}
+
+// ★ 악성 재고 삭제 함수 (핵심 기능) ★
+function cleanupInventory() {
+    // 현재 채굴 가능한 최소 레벨 (던전 1 깨면 2가 나옴. 즉, 2 미만은 쓰레기)
+    const minMiningLv = unlockedDungeon;
+    let cleared = false;
+    for(let i=0; i < maxSlots; i++) {
+        if(inventory[i] > 0 && inventory[i] < minMiningLv) {
+            inventory[i] = 0; // 쓰레기 삭제
+            cleared = true;
+        }
+    }
+    if(cleared && currentView === 'mine') renderInventory();
 }
 
 function renderShopItems() {
@@ -82,19 +97,26 @@ function renderShopItems() {
     content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
     const container = document.getElementById('shop-items-container');
     
+    // ★ 상점 텍스트 변경: 행운 / 더블 / 대성공 수치 표시 ★
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
     if (pickNext) {
         container.innerHTML += `
         <div class="shop-item">
-            <div class="shop-info"><span>⚒️ ${pickNext.name} (Lv.${pickaxeIdx + 2})</span> <button onclick="buyItem('pick', ${pickNext.cost})" class="btn-gold">💰 ${fNum(pickNext.cost)}</button></div>
-            <div class="shop-desc">기본 Lv.${pick.baseLv} ➔ Lv.${pickNext.baseLv} (상위 확률 ${Math.round(pick.luck*100)}% ➔ ${Math.round(pickNext.luck*100)}%)</div>
+            <div class="shop-info"><span>⚒️ ${pickNext.name}</span> <button onclick="buyItem('pick', ${pickNext.cost})" class="btn-gold">💰 ${fNum(pickNext.cost)}</button></div>
+            <div class="shop-desc">
+                <span style="color:#2ecc71">🍀행운(Lv+1): ${Math.round(pick.luck*100)}% ➔ ${Math.round(pickNext.luck*100)}%</span><br>
+                <span style="color:#3498db">✌️더블(x2): ${Math.round(pick.double*100)}% ➔ ${Math.round(pickNext.double*100)}%</span><br>
+                <span style="color:#9b59b6">✨대성공(Skip): ${Math.round(pick.great*100)}% ➔ ${Math.round(pickNext.great*100)}%</span>
+            </div>
         </div>`;
     } else {
         container.innerHTML += `
         <div class="shop-item">
-            <div class="shop-info"><span>⚒️ ${pick.name} (Lv.${pickaxeIdx + 1})</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">최고 레벨 도달 (기본 Lv.${pick.baseLv}, 상위 확률 ${Math.round(pick.luck*100)}%)</div>
+            <div class="shop-info"><span>⚒️ ${pick.name} (MAX)</span> <button class="btn-max">MAX</button></div>
+            <div class="shop-desc">
+                🍀행운 ${Math.round(pick.luck*100)}% | ✌️더블 ${Math.round(pick.double*100)}% | ✨대성공 ${Math.round(pick.great*100)}%
+            </div>
         </div>`;
     }
     
@@ -155,9 +177,9 @@ function buyItem(type, cost) {
             if (!TOOTH_DATA.pickaxes[pickaxeIdx + 1]) return;
             gold -= cost;
             pickaxeIdx++;
-            const newMinLv = TOOTH_DATA.pickaxes[pickaxeIdx].baseLv;
-            for(let i=0; i<maxSlots; i++) { if(inventory[i] > 0 && inventory[i] < newMinLv) inventory[i] = 0; }
-            sortInventory(); updatePickaxeVisual();
+            // 곡괭이 사면 한번 청소해주기
+            cleanupInventory();
+            updatePickaxeVisual();
         } 
         else if (type === 'auto') {
             if (autoMineLevel >= MAX_AUTO_MINE_LV) return;
@@ -178,20 +200,16 @@ function buyItem(type, cost) {
     } else { alert("골드가 부족합니다!"); }
 }
 
-// ★ 제련 탭 UI 개편: 글로벌 업그레이드 및 개별 공격력 ★
 function renderRefineView() {
     const grid = document.getElementById('refine-grid');
     if (!grid) return;
     
-    // 1. 글로벌 업그레이드 패널 (상단에 추가)
     const costGlobalCd = Math.floor(5000 * Math.pow(1.5, globalUpgrades.cd));
     const costGlobalRng = Math.floor(3000 * Math.pow(1.5, globalUpgrades.rng));
     
-    // 쿨타임: 레벨당 2% 감소, 최대 80% (Lv.40)
     const curCdReduc = Math.min(80, globalUpgrades.cd * 2);
     const nextCdReduc = Math.min(80, (globalUpgrades.cd + 1) * 2);
     
-    // 사거리: 레벨당 증가
     const curRngVal = globalUpgrades.rng;
     
     let html = `
@@ -212,7 +230,6 @@ function renderRefineView() {
     </div>
     `;
     
-    // 2. 개별 슬롯 공격력 강화
     slotUpgrades.forEach((slot, idx) => {
         const costAtk = Math.floor(1000 * Math.pow(1.3, slot.atk));
         const curAtk = (1 + slot.atk * 0.1).toFixed(1);
@@ -255,20 +272,81 @@ function upgradeSlot(idx, type, cost) {
 
 function sortInventory() { let items = inventory.filter(v => v > 0); items.sort((a, b) => b - a); inventory.fill(0); items.forEach((v, i) => { if(i < 56) inventory[i] = v; }); renderInventory(); saveGame(); }
 function autoMergeLowest() { let levelCounts = {}; for(let i=8; i<maxSlots; i++) { const lv = inventory[i]; if (lv > 0) levelCounts[lv] = (levelCounts[lv] || 0) + 1; } let targetLv = -1; const levels = Object.keys(levelCounts).map(Number).sort((a,b) => a - b); for (let lv of levels) { if (levelCounts[lv] >= 2) { targetLv = lv; break; } } if (targetLv !== -1) massMerge(targetLv, true); }
-function massMerge(lv, once = false) { let indices = []; inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < maxSlots) indices.push(idx); }); if(indices.length < 2) return; playSfx('merge'); const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const loopCount = once ? 1 : Math.floor(indices.length / 2); for(let i=0; i < loopCount; i++) { let idx1 = indices[2*i]; let idx2 = indices[2*i+1]; const isGreat = Math.random() < pick.luck * 0.5; const nextLv = isGreat ? lv + 2 : lv + 1; inventory[idx2] = nextLv; inventory[idx1] = 0; if(isGreat && currentView === 'mine') triggerGreatSuccess(idx2); } if(currentView === 'mine') renderInventory(); }
-function addMinedItem() { let emptyIdx = -1; for(let i=0; i<maxSlots; i++) { if(inventory[i] === 0) { emptyIdx = i; break; } } if (emptyIdx === -1) return false; const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; let resultLv = pick.baseLv; const rng = Math.random(); if (rng < pick.luck * 0.2) resultLv += 2; else if (rng < pick.luck) resultLv += 1; resultLv = Math.max(resultLv, unlockedDungeon); inventory[emptyIdx] = resultLv; if(currentView === 'mine') renderInventory(); playSfx('mine'); return true; }
+
+// ★ 합성 로직 수정: 곡괭이의 great 확률 사용 ★
+function massMerge(lv, once = false) { 
+    let indices = []; 
+    inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < maxSlots) indices.push(idx); }); 
+    if(indices.length < 2) return; 
+    playSfx('merge'); 
+    
+    const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; 
+    const loopCount = once ? 1 : Math.floor(indices.length / 2); 
+    
+    for(let i=0; i < loopCount; i++) { 
+        let idx1 = indices[2*i]; 
+        let idx2 = indices[2*i+1]; 
+        
+        // ★ 대성공 확률 적용 (Luck이 아니라 Great 사용) ★
+        const isGreat = Math.random() < pick.great; 
+        const nextLv = isGreat ? lv + 2 : lv + 1; 
+        
+        inventory[idx2] = nextLv; 
+        inventory[idx1] = 0; 
+        
+        if(isGreat && currentView === 'mine') triggerGreatSuccess(idx2); 
+    } 
+    if(currentView === 'mine') renderInventory(); 
+}
+
+// ★ 채굴 로직 전면 수정: Luck & Double 적용 + 자동 청소 호출 ★
+function addMinedItem() { 
+    // 우선 청소 한번 (공간확보)
+    cleanupInventory();
+
+    let emptyIdx = -1; 
+    for(let i=0; i<maxSlots; i++) { if(inventory[i] === 0) { emptyIdx = i; break; } } 
+    if (emptyIdx === -1) return false; 
+    
+    const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; 
+    const baseLv = unlockedDungeon; // 기본은 현재 던전 해금 레벨
+    
+    // 1. 행운(Luck) 체크: 상위 레벨 획득?
+    let resultLv = baseLv;
+    if (Math.random() < pick.luck) resultLv += 1;
+    
+    // 2. 더블(Double) 체크: 2개 획득?
+    const isDouble = Math.random() < pick.double;
+    
+    // 첫 번째 아이템 지급
+    inventory[emptyIdx] = resultLv;
+    
+    // 더블 당첨 시 두 번째 아이템 지급 (빈칸 있을 경우만)
+    if (isDouble) {
+        let secondIdx = -1;
+        for(let i=0; i<maxSlots; i++) { if(inventory[i] === 0) { secondIdx = i; break; } }
+        if (secondIdx !== -1) {
+            inventory[secondIdx] = resultLv;
+            // 시각적 피드백 (반짝임 등은 복잡해지니 생략하거나 로그로만)
+        }
+    }
+
+    if(currentView === 'mine') renderInventory(); 
+    playSfx('mine'); 
+    return true; 
+}
+
 function processMining(amt) { mineProgress += amt; if (mineProgress >= 100) { mineProgress = 100; if (addMinedItem()) { mineProgress = 0; } } updateUI(); }
 function gameLoop() { if(!isMiningPaused) { const miningSpeedSec = Math.max(7, 15 - (autoMineLevel * 0.2)); const tickAmt = 100 / (miningSpeedSec * 20); processMining(tickAmt); const currentMaxTime = Math.max(10000, 25000 - (autoMergeSpeedLevel * 1000)); const increment = (50 / currentMaxTime) * 100; mergeProgress += increment; if (mergeProgress >= 100) { mergeProgress = 0; autoMergeLowest(); } } if (dungeonActive && window.updateBattle) updateBattle(); updateUI(); }
 function updateUI() { document.getElementById('gold-display').innerText = fNum(gold); const m = document.getElementById('mine-bar'); if(m) m.style.width=mineProgress+'%'; const g = document.getElementById('merge-bar'); if(g) g.style.width=mergeProgress+'%'; document.getElementById('pickaxe-name').innerText = TOOTH_DATA.pickaxes[pickaxeIdx].name; saveGame(); }
 function renderInventory() { const grid = document.getElementById('inventory-grid'); grid.innerHTML = ''; for (let i = 0; i < 56; i++) { const slot = document.createElement('div'); slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= maxSlots ? 'locked-slot' : ''}`; slot.dataset.index = i; slot.id = `slot-${i}`; if (i < maxSlots && inventory[i] > 0) { const dmg = fNum(getAtk(inventory[i])); slot.innerHTML = `<span class="dmg-label">⚔️${dmg}</span>${getToothIcon(inventory[i])}<span class="lv-text">Lv.${inventory[i]}</span>`; } else if (i >= maxSlots) slot.innerHTML = "🔒"; if (i < maxSlots) { slot.onpointerdown = (e) => { if (inventory[i] > 0) { const currentTime = new Date().getTime(); const tapLength = currentTime - lastTapTime; if (tapLength < 300 && tapLength > 0 && lastTapIdx === i) { e.preventDefault(); massMerge(inventory[i]); lastTapTime = 0; return; } lastTapTime = currentTime; lastTapIdx = i; e.preventDefault(); dragStartIdx = i; slot.classList.add('picked'); dragProxy.innerHTML = getToothIcon(inventory[i]); dragProxy.style.display = 'block'; moveProxy(e); slot.setPointerCapture(e.pointerId); } }; slot.onpointermove = (e) => { if (dragStartIdx !== null) moveProxy(e); }; slot.onpointerup = (e) => { if (dragStartIdx !== null) { slot.releasePointerCapture(e.pointerId); slot.classList.remove('picked'); dragProxy.style.display = 'none'; const elements = document.elementsFromPoint(e.clientX, e.clientY); const targetSlot = elements.find(el => el.classList.contains('slot') && el !== slot); if (targetSlot) { const toIdx = parseInt(targetSlot.dataset.index); if (toIdx < maxSlots) handleMoveOrMerge(dragStartIdx, toIdx); } document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target')); dragStartIdx = null; } }; } grid.appendChild(slot); } }
-function handleMoveOrMerge(from, to) { if (from === to) return; if (inventory[from] === inventory[to] && inventory[from] > 0) { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const isGreat = Math.random() < pick.luck * 0.5; const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1; inventory[to] = nextLv; inventory[from] = 0; if(isGreat) triggerGreatSuccess(to); else playSfx('merge'); } else { [inventory[from], inventory[to]] = [inventory[to], inventory[from]]; } renderInventory(); saveGame(); }
+function handleMoveOrMerge(from, to) { if (from === to) return; if (inventory[from] === inventory[to] && inventory[from] > 0) { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const isGreat = Math.random() < pick.great; const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1; inventory[to] = nextLv; inventory[from] = 0; if(isGreat) triggerGreatSuccess(to); else playSfx('merge'); } else { [inventory[from], inventory[to]] = [inventory[to], inventory[from]]; } renderInventory(); saveGame(); }
 function moveProxy(e) { dragProxy.style.left = e.clientX + 'px'; dragProxy.style.top = e.clientY + 'px'; document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target')); const elements = document.elementsFromPoint(e.clientX, e.clientY); const targetSlot = elements.find(el => el.classList.contains('slot')); if(targetSlot && parseInt(targetSlot.dataset.index) < maxSlots) targetSlot.classList.add('drag-target'); }
 function triggerGreatSuccess(idx) { playSfx('great'); const slot = document.getElementById(`slot-${idx}`); if (slot) { slot.classList.add('shiny-effect'); setTimeout(() => slot.classList.remove('shiny-effect'), 1000); } }
 function updatePickaxeVisual() { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; document.getElementById('miner-char').innerText = pick.icon || "⛏️"; }
 function createHitEffect(x, y) { const effect = document.createElement('div'); effect.className = 'hit-effect'; effect.innerText = "💥"; effect.style.left = x + 'px'; effect.style.top = y + 'px'; document.body.appendChild(effect); setTimeout(() => effect.remove(), 400); }
 function setupMiningTouch() { const mineArea = document.getElementById('mine-rock-area'); mineArea.addEventListener('pointerdown', (e) => { e.preventDefault(); const miner = document.getElementById('miner-char'); miner.style.animation = 'none'; miner.offsetHeight; miner.style.animation = 'hammer 0.08s ease-in-out'; playSfx('mine'); processMining(15); createHitEffect(e.clientX, e.clientY); }); }
 
-// ★ 쿠폰 추가 (리셋, 100f) ★
 function checkCoupon() { 
     const code = document.getElementById('coupon-input').value.trim(); 
     if (code === "100b" || code === "RICH100B") { 
@@ -276,7 +354,7 @@ function checkCoupon() {
         alert("치트키 적용!"); updateUI(); 
     } 
     else if (code === "100f" || code === "RICH100F") {
-        gold += 100000000000000000000; // 100 * 10^18
+        gold += 100000000000000000000; 
         alert("슈퍼 리치 모드!"); updateUI();
     }
     else if (code === "RESET") {
@@ -288,10 +366,9 @@ function checkCoupon() {
     else { alert("유효하지 않은 쿠폰입니다."); } 
 }
 
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV390'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV390', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV400'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV400', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 
-// ★ 던전 리스트: 권장 공격력 표시로 변경 (보스 40대 기준) ★
 function renderDungeonList() { 
     const list = document.getElementById('dungeon-list'); 
     list.innerHTML = ''; 
@@ -300,10 +377,8 @@ function renderDungeonList() {
         const isUnlocked = idx < unlockedDungeon; 
         div.className = `dungeon-card ${isUnlocked ? 'unlocked' : 'locked'}`; 
         
-        // 보스 HP 계산 (battle.js 공식 참조)
         const baseHp = 100 * Math.pow(2.5, idx);
         const bossHp = baseHp * 30;
-        // 권장 공격력 = 보스 HP / 40
         const recAtk = bossHp / 40;
 
         if (isUnlocked) { 
