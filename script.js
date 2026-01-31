@@ -1,4 +1,4 @@
-// Version: 4.2.0 - Reset Fix, Amulet, Max Caps, Simple Pick
+// Version: 5.0.0 - Relay Battle Prep, Reset Fix, Amulet, Max Caps
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -39,13 +39,13 @@ function saveGame() {
         slotUpgrades, globalUpgrades, greatChanceLevel,
         lastTime: Date.now(), isMiningPaused 
     };
-    localStorage.setItem('toothSaveV420', JSON.stringify(data));
+    localStorage.setItem('toothSaveV500', JSON.stringify(data));
 }
 
 function loadGame() {
-    const saved = localStorage.getItem('toothSaveV420');
-    // 하위 호환성 체크
-    const legacy = localStorage.getItem('toothSaveV410') || localStorage.getItem('toothSaveV400') || localStorage.getItem('toothSaveV390');
+    const saved = localStorage.getItem('toothSaveV500');
+    // 하위 호환성 체크 (이전 버전 데이터 로드)
+    const legacy = localStorage.getItem('toothSaveV420') || localStorage.getItem('toothSaveV410') || localStorage.getItem('toothSaveV400') || localStorage.getItem('toothSaveV390');
     
     let d = null;
     if (saved) d = JSON.parse(saved);
@@ -84,6 +84,7 @@ function loadGame() {
     updatePickaxeVisual();
 }
 
+// 악성 재고 삭제
 function cleanupInventory() {
     const minMiningLv = unlockedDungeon;
     let cleared = false;
@@ -391,8 +392,8 @@ function checkCoupon() {
     else { alert("유효하지 않은 쿠폰입니다."); } 
 }
 
-function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV420'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
-function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV420', decoded); location.reload(); } catch (e) { alert("오류"); } } }
+function exportSave() { saveGame(); const data = localStorage.getItem('toothSaveV500'); const encoded = btoa(unescape(encodeURIComponent(data))); prompt("코드 복사:", encoded); }
+function importSave() { const str = prompt("코드 붙여넣기:"); if (str) { try { const decoded = decodeURIComponent(escape(atob(str))); localStorage.setItem('toothSaveV500', decoded); location.reload(); } catch (e) { alert("오류"); } } }
 
 function renderDungeonList() { 
     const list = document.getElementById('dungeon-list'); 
