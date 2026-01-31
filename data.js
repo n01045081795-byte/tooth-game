@@ -1,38 +1,40 @@
-// Version: 3.4.0 - Pickaxe Luck & Stats
+// Version: 3.8.0 - Cost Balancing & Boss Logic
 const TOOTH_DATA = {
     icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
+    // 곡괭이 비용: 초반 낮게 시작 -> 지수 상승
     pickaxes: [
         { name: "허름한 나무 곡괭이", cost: 0, baseLv: 1, luck: 0.05, icon: "🪵" },
-        { name: "무딘 구리 곡괭이", cost: 1000, baseLv: 1, luck: 0.15, icon: "🪨" },
-        { name: "튼튼한 철 곡괭이", cost: 5000, baseLv: 2, luck: 0.20, icon: "⛏️" },
-        { name: "연마된 강철 곡괭이", cost: 25000, baseLv: 2, luck: 0.35, icon: "⚔️" },
+        { name: "무딘 구리 곡괭이", cost: 500, baseLv: 1, luck: 0.15, icon: "🪨" },
+        { name: "튼튼한 철 곡괭이", cost: 2500, baseLv: 2, luck: 0.20, icon: "⛏️" },
+        { name: "연마된 강철 곡괭이", cost: 15000, baseLv: 2, luck: 0.35, icon: "⚔️" },
         { name: "빛나는 황금 곡괭이", cost: 100000, baseLv: 3, luck: 0.40, icon: "⚜️" },
-        { name: "고강도 티타늄 곡괭이", cost: 500000, baseLv: 3, luck: 0.55, icon: "💠" },
-        { name: "영롱한 다이아 곡괭이", cost: 2000000, baseLv: 4, luck: 0.60, icon: "💎" },
-        { name: "카본 초합금 곡괭이", cost: 10000000, baseLv: 4, luck: 0.75, icon: "🔮" },
-        { name: "신화의 오리할콘 곡괭이", cost: 50000000, baseLv: 5, luck: 0.80, icon: "👑" }
+        { name: "고강도 티타늄 곡괭이", cost: 800000, baseLv: 3, luck: 0.55, icon: "💠" },
+        { name: "영롱한 다이아 곡괭이", cost: 5000000, baseLv: 4, luck: 0.60, icon: "💎" },
+        { name: "카본 초합금 곡괭이", cost: 50000000, baseLv: 4, luck: 0.75, icon: "🔮" },
+        { name: "신화의 오리할콘 곡괭이", cost: 1000000000, baseLv: 5, luck: 0.80, icon: "👑" }
     ],
+    // 용병 비용 재조정
     mercenaries: [
         { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, baseHp: 100, spd: 1.0, icon: "👨‍🌾" },
-        { id: 1, name: "마을 경비병", cost: 5000, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
-        { id: 2, name: "견습 검사", cost: 20000, atkMul: 1.5, baseHp: 200, spd: 1.2, icon: "🤺" },
-        { id: 3, name: "숙련된 사냥꾼", cost: 50000, atkMul: 1.8, baseHp: 180, spd: 1.3, icon: "🏹" },
-        { id: 4, name: "왕국 기사", cost: 150000, atkMul: 2.2, baseHp: 300, spd: 1.1, icon: "💂‍♂️" },
-        { id: 5, name: "전투 사제", cost: 400000, atkMul: 2.6, baseHp: 250, spd: 1.2, icon: "🧙‍♂️" },
-        { id: 6, name: "그림자 암살자", cost: 1000000, atkMul: 3.2, baseHp: 200, spd: 1.5, icon: "🥷" },
+        { id: 1, name: "마을 경비병", cost: 800, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
+        { id: 2, name: "견습 검사", cost: 3000, atkMul: 1.5, baseHp: 200, spd: 1.2, icon: "🤺" },
+        { id: 3, name: "숙련된 사냥꾼", cost: 12000, atkMul: 1.8, baseHp: 180, spd: 1.3, icon: "🏹" },
+        { id: 4, name: "왕국 기사", cost: 50000, atkMul: 2.2, baseHp: 300, spd: 1.1, icon: "💂‍♂️" },
+        { id: 5, name: "전투 사제", cost: 200000, atkMul: 2.6, baseHp: 250, spd: 1.2, icon: "🧙‍♂️" },
+        { id: 6, name: "그림자 암살자", cost: 800000, atkMul: 3.2, baseHp: 200, spd: 1.5, icon: "🥷" },
         { id: 7, name: "엘프 명사수", cost: 3000000, atkMul: 4.0, baseHp: 280, spd: 1.4, icon: "🧝‍♀️" },
-        { id: 8, name: "오크 전사", cost: 8000000, atkMul: 5.0, baseHp: 500, spd: 1.0, icon: "👹" },
-        { id: 9, name: "드워프 공학자", cost: 20000000, atkMul: 6.5, baseHp: 400, spd: 1.2, icon: "👷" },
-        { id: 10, name: "화염 마법사", cost: 50000000, atkMul: 8.5, baseHp: 350, spd: 1.3, icon: "🔥" },
-        { id: 11, name: "냉기 마녀", cost: 150000000, atkMul: 11.0, baseHp: 400, spd: 1.3, icon: "❄️" },
-        { id: 12, name: "강철의 골렘", cost: 400000000, atkMul: 15.0, baseHp: 1000, spd: 0.8, icon: "🤖" },
-        { id: 13, name: "뱀파이어 로드", cost: 1000000000, atkMul: 20.0, baseHp: 600, spd: 1.4, icon: "🧛" },
-        { id: 14, name: "드래곤 슬레이어", cost: 3000000000, atkMul: 30.0, baseHp: 800, spd: 1.3, icon: "🐲" },
-        { id: 15, name: "성기사 단장", cost: 10000000000, atkMul: 45.0, baseHp: 1200, spd: 1.2, icon: "⚜️" },
-        { id: 16, name: "차원 방랑자", cost: 50000000000, atkMul: 70.0, baseHp: 900, spd: 1.6, icon: "🌌" },
-        { id: 17, name: "데몬 헌터", cost: 200000000000, atkMul: 100.0, baseHp: 1500, spd: 1.5, icon: "😈" },
-        { id: 18, name: "천상의 수호자", cost: 1000000000000, atkMul: 150.0, baseHp: 2000, spd: 1.4, icon: "👼" },
-        { id: 19, name: "치아의 신", cost: 10000000000000, atkMul: 300.0, baseHp: 5000, spd: 2.0, icon: "🦷" }
+        { id: 8, name: "오크 전사", cost: 10000000, atkMul: 5.0, baseHp: 500, spd: 1.0, icon: "👹" },
+        { id: 9, name: "드워프 공학자", cost: 40000000, atkMul: 6.5, baseHp: 400, spd: 1.2, icon: "👷" },
+        { id: 10, name: "화염 마법사", cost: 150000000, atkMul: 8.5, baseHp: 350, spd: 1.3, icon: "🔥" },
+        { id: 11, name: "냉기 마녀", cost: 600000000, atkMul: 11.0, baseHp: 400, spd: 1.3, icon: "❄️" },
+        { id: 12, name: "강철의 골렘", cost: 2500000000, atkMul: 15.0, baseHp: 1000, spd: 0.8, icon: "🤖" },
+        { id: 13, name: "뱀파이어 로드", cost: 10000000000, atkMul: 20.0, baseHp: 600, spd: 1.4, icon: "🧛" },
+        { id: 14, name: "드래곤 슬레이어", cost: 50000000000, atkMul: 30.0, baseHp: 800, spd: 1.3, icon: "🐲" },
+        { id: 15, name: "성기사 단장", cost: 200000000000, atkMul: 45.0, baseHp: 1200, spd: 1.2, icon: "⚜️" },
+        { id: 16, name: "차원 방랑자", cost: 1000000000000, atkMul: 70.0, baseHp: 900, spd: 1.6, icon: "🌌" },
+        { id: 17, name: "데몬 헌터", cost: 5000000000000, atkMul: 100.0, baseHp: 1500, spd: 1.5, icon: "😈" },
+        { id: 18, name: "천상의 수호자", cost: 25000000000000, atkMul: 150.0, baseHp: 2000, spd: 1.4, icon: "👼" },
+        { id: 19, name: "치아의 신", cost: 100000000000000, atkMul: 300.0, baseHp: 5000, spd: 2.0, icon: "🦷" }
     ],
     dungeons: [
         "시작의 이끼 동굴", "낡은 해골 병영", "침묵의 지하 수로", "버려진 광산 심부", 
@@ -41,7 +43,7 @@ const TOOTH_DATA = {
         "초월자의 시험장", "파멸의 잿더미", "영겁의 감시자 탑", "신의 영역: 입구", 
         "황혼의 그림자 성소", "우주 너머의 공허", "혼돈의 끝자락", "카오스 울트라 최종장"
     ],
-    invExpansion: [5000, 50000, 500000, 5000000]
+    invExpansion: [2000, 20000, 200000, 2000000]
 };
 
 // Web Audio API
@@ -61,7 +63,6 @@ function playTone(freq, type, duration, vol = 0.1) {
 }
 
 function playSfx(name) {
-    // script.js 에서 오버라이드하여 제어하므로 여기서는 기본 함수만 제공
     if (audioCtx.state === 'suspended') audioCtx.resume();
     switch (name) {
         case 'mine': playTone(150, 'square', 0.1, 0.1); break;
