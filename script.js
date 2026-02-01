@@ -1,4 +1,4 @@
-// Version: 6.6.1 - Defensive Coding (Safety Fix)
+// Version: 6.6.2 - Shop UI Compact & Timing Balance
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -69,9 +69,14 @@ function loadGame() {
             
             if (!isMiningPaused && d.lastTime) {
                 const offTime = (Date.now() - d.lastTime) / 1000;
-                const miningSpeed = Math.max(7, 15 - (autoMineLevel * 0.2)); 
+                
+                // [Balance] 오프라인 계산도 새로운 공식 적용
+                // Mine: Start 10s -> Decrease
+                const miningSpeed = Math.max(1, 10 - ((autoMineLevel - 1) * 0.2));
                 const minedCount = Math.floor(offTime / miningSpeed); 
-                const currentMaxTime = Math.max(10000, 25000 - (autoMergeSpeedLevel * 1000));
+                
+                // Merge: Start 30s -> Decrease (Slower than mine)
+                const currentMaxTime = Math.max(2000, 30000 - ((autoMergeSpeedLevel - 1) * 500));
                 const merges = Math.floor((offTime * 1000) / currentMaxTime);
                 
                 for(let k=0; k < merges; k++) autoMergeLowest();
@@ -81,7 +86,6 @@ function loadGame() {
             }
         }
         
-        // 안전 장치: 요소가 존재할 때만 실행
         if (!nickname) {
             const nickInput = document.getElementById('nickname-input');
             const nickModal = document.getElementById('nickname-modal');
@@ -141,7 +145,6 @@ function generateRankings() {
     const myPower = calculateTotalPower();
     let ranks = [];
 
-    // 안전 장치: botNames 데이터가 없을 경우 대비
     const botNamesList = (TOOTH_DATA && TOOTH_DATA.botNames) ? TOOTH_DATA.botNames : ["User-Bot1", "User-Bot2"];
 
     let myRank = 9999;
@@ -212,95 +215,110 @@ function closeGuide() { document.getElementById('guide-modal').style.display = '
 function renderShopItems() {
     const content = document.getElementById('shop-content');
     if(!content) return;
-    let expansionCount = (maxSlots - 24) / 8;
-    content.innerHTML = `<h3 style="color:var(--gold);">Upgrade Lab 🧪</h3><p style="color:#fff; margin-bottom:15px;">보유 골드: <span style="color:var(--gold);">${fNum(gold)}</span></p><div id="shop-items-container"></div>`;
-    const container = document.getElementById('shop-items-container');
     
+    let expansionCount = (maxSlots - 24) / 8;
+    
+    // [UI Change] Header with Exit Button
+    let html = `
+        <div class="shop-header">
+            <span style="font-weight:bold; color:var(--gold); font-size:16px;">Upgrade Lab 🧪</span>
+            <span style="font-size:12px; color:#fff;">보유: <span style="color:var(--gold);">${fNum(gold)}G</span></span>
+            <button onclick="closeShop()" class="btn-red" style="padding:4px 8px; font-size:12px;">✖</button>
+        </div>
+        <div class="shop-grid">
+    `;
+
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
+    
+    // 1. Pickaxe
     if (pickNext) {
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
             <div class="shop-info"><span>⚒️ ${pickNext.name}</span> <button onclick="buyItem('pick', ${pickNext.cost})" class="btn-gold">💰 ${fNum(pickNext.cost)}</button></div>
-            <div class="shop-desc">
-                <span style="color:#2ecc71">🍀 상위(Lv+1) 채굴 확률: ${Math.round(pick.luck*100)}% ➔ ${Math.round(pickNext.luck*100)}%</span>
-            </div>
+            <div class="shop-desc">🍀 Lv+1 확률: ${Math.round(pick.luck*100)}% ➔ ${Math.round(pickNext.luck*100)}%</div>
         </div>`;
     } else {
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
             <div class="shop-info"><span>⚒️ ${pick.name} (MAX)</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">🍀 상위 채굴 확률: ${Math.round(pick.luck*100)}% (최대)</div>
+            <div class="shop-desc">🍀 Lv+1 확률: ${Math.round(pick.luck*100)}% (최대)</div>
         </div>`;
     }
 
+    // 2. Amulet
     const curGreat = greatChanceLevel * 2; 
     if (greatChanceLevel < MAX_GREAT_LV) {
         const amuletCost = Math.floor(5000 * Math.pow(1.5, greatChanceLevel));
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>🍀 합성의 부적 (Lv.${greatChanceLevel})</span> <button onclick="buyItem('amulet', ${amuletCost})" class="btn-gold">💰 ${fNum(amuletCost)}</button></div>
-            <div class="shop-desc">
-                <span style="color:#9b59b6">✨ 합성 대성공(Lv+2) 확률: ${curGreat}% ➔ ${curGreat+2}%</span>
-            </div>
+            <div class="shop-info"><span>🍀 합성 부적 (Lv.${greatChanceLevel})</span> <button onclick="buyItem('amulet', ${amuletCost})" class="btn-gold">💰 ${fNum(amuletCost)}</button></div>
+            <div class="shop-desc">✨ 대성공 확률: ${curGreat}% ➔ ${curGreat+2}%</div>
         </div>`;
     } else {
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>🍀 합성의 부적 (MAX)</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">✨ 합성 대성공 확률: ${curGreat}% (최대)</div>
+            <div class="shop-info"><span>🍀 합성 부적 (MAX)</span> <button class="btn-max">MAX</button></div>
+            <div class="shop-desc">✨ 대성공 확률: ${curGreat}% (최대)</div>
         </div>`;
     }
     
-    const curSpd = Math.max(7, 15 - (autoMineLevel * 0.2)).toFixed(1);
+    // 3. Auto Mine (Balance Updated)
+    // Formula: 10s - (level-1)*0.2
+    const curSpd = Math.max(1, 10 - ((autoMineLevel-1) * 0.2)).toFixed(1);
     if (autoMineLevel < MAX_AUTO_MINE_LV) {
         const autoCost = Math.floor(500 * Math.pow(1.4, autoMineLevel - 1));
-        const nextSpd = Math.max(7, 15 - ((autoMineLevel+1) * 0.2)).toFixed(1);
-        container.innerHTML += `
+        const nextSpd = Math.max(1, 10 - (autoMineLevel * 0.2)).toFixed(1);
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>🤖 자동 채굴 강화 (Lv.${autoMineLevel})</span> <button onclick="buyItem('auto', ${autoCost})" class="btn-gold">💰 ${fNum(autoCost)}</button></div>
-            <div class="shop-desc">속도: ${curSpd}초 ➔ ${nextSpd}초</div>
+            <div class="shop-info"><span>🤖 채굴 강화 (Lv.${autoMineLevel})</span> <button onclick="buyItem('auto', ${autoCost})" class="btn-gold">💰 ${fNum(autoCost)}</button></div>
+            <div class="shop-desc">속도: ${curSpd}s ➔ ${nextSpd}s</div>
         </div>`;
     } else {
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>🤖 자동 채굴 강화 (MAX)</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">현재 속도: ${curSpd}초 (최대 효율)</div>
+            <div class="shop-info"><span>🤖 채굴 강화 (MAX)</span> <button class="btn-max">MAX</button></div>
+            <div class="shop-desc">속도: ${curSpd}s (최대 효율)</div>
         </div>`;
     }
     
-    const curMerge = Math.max(10, 25 - autoMergeSpeedLevel).toFixed(1);
+    // 4. Auto Merge (Balance Updated)
+    // Formula: 30s - (level-1)*0.5
+    const curMerge = Math.max(2, 30 - ((autoMergeSpeedLevel-1) * 0.5)).toFixed(1);
     if (autoMergeSpeedLevel < MAX_AUTO_MERGE_LV) {
         const mergeCost = Math.floor(1000 * Math.pow(1.6, autoMergeSpeedLevel - 1));
-        const nextMerge = Math.max(10, 25 - (autoMergeSpeedLevel + 1)).toFixed(1);
-        container.innerHTML += `
+        const nextMerge = Math.max(2, 30 - (autoMergeSpeedLevel * 0.5)).toFixed(1);
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>⚡ 자동 합성 강화 (Lv.${autoMergeSpeedLevel})</span> <button onclick="buyItem('merge', ${mergeCost})" class="btn-gold">💰 ${fNum(mergeCost)}</button></div>
-            <div class="shop-desc">주기: ${curMerge}초 ➔ ${nextMerge}초</div>
+            <div class="shop-info"><span>⚡ 합성 강화 (Lv.${autoMergeSpeedLevel})</span> <button onclick="buyItem('merge', ${mergeCost})" class="btn-gold">💰 ${fNum(mergeCost)}</button></div>
+            <div class="shop-desc">주기: ${curMerge}s ➔ ${nextMerge}s</div>
         </div>`;
     } else {
-        container.innerHTML += `
+        html += `
         <div class="shop-item">
-            <div class="shop-info"><span>⚡ 자동 합성 강화 (MAX)</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">현재 주기: ${curMerge}초 (최대 효율)</div>
+            <div class="shop-info"><span>⚡ 합성 강화 (MAX)</span> <button class="btn-max">MAX</button></div>
+            <div class="shop-desc">주기: ${curMerge}s (최대 효율)</div>
         </div>`;
     }
     
+    // 5. Inventory Expansion
     if (expansionCount < 4) {
         const expCost = TOOTH_DATA.invExpansion[expansionCount];
-        container.innerHTML += `
-        <div class="shop-item">
-            <div class="shop-info"><span>🎒 인벤토리 확장 (${expansionCount+1}/4)</span> <button onclick="buyItem('exp', ${expCost})" class="btn-gold">💰 ${fNum(expCost)}</button></div>
-            <div class="shop-desc">8칸 추가 개방</div>
+        html += `
+        <div class="shop-item" style="grid-column: 1 / -1;">
+            <div class="shop-info" style="flex-direction:row; justify-content:space-between;"><span>🎒 인벤토리 확장 (${expansionCount+1}/4)</span> <button onclick="buyItem('exp', ${expCost})" class="btn-gold">💰 ${fNum(expCost)}</button></div>
+            <div class="shop-desc" style="text-align:left;">8칸 추가 개방</div>
         </div>`;
     } else {
-        container.innerHTML += `
-        <div class="shop-item">
-            <div class="shop-info"><span>🎒 인벤토리 확장 (MAX)</span> <button class="btn-max">MAX</button></div>
-            <div class="shop-desc">모든 슬롯이 개방되었습니다.</div>
+        html += `
+        <div class="shop-item" style="grid-column: 1 / -1;">
+            <div class="shop-info" style="flex-direction:row; justify-content:space-between;"><span>🎒 인벤토리 확장 (MAX)</span> <button class="btn-max">MAX</button></div>
+            <div class="shop-desc" style="text-align:left;">모든 슬롯 개방 완료</div>
         </div>`;
     }
-    content.innerHTML += `<button onclick="closeShop()" class="btn-red" style="width:100%; margin-top:20px;">닫기</button>`;
+    
+    html += `</div>`; // Close grid
+    content.innerHTML = html;
 }
 
 function buyItem(type, cost) {
@@ -453,7 +471,29 @@ function addMinedItem() {
 }
 
 function processMining(amt) { mineProgress += amt; if (mineProgress >= 100) { mineProgress = 100; if (addMinedItem()) { mineProgress = 0; } } updateUI(); }
-function gameLoop() { if(!isMiningPaused) { const miningSpeedSec = Math.max(7, 15 - (autoMineLevel * 0.2)); const tickAmt = 100 / (miningSpeedSec * 20); processMining(tickAmt); const currentMaxTime = Math.max(10000, 25000 - (autoMergeSpeedLevel * 1000)); const increment = (50 / currentMaxTime) * 100; mergeProgress += increment; if (mergeProgress >= 100) { mergeProgress = 0; autoMergeLowest(); } } if (dungeonActive && window.updateBattle) updateBattle(); updateUI(); }
+
+function gameLoop() { 
+    if(!isMiningPaused) { 
+        // [Balance] Mining: Start 10s, Decrease 0.2s/Lv
+        const miningSpeedSec = Math.max(1, 10 - ((autoMineLevel - 1) * 0.2)); 
+        const tickAmt = 100 / (miningSpeedSec * 20); 
+        processMining(tickAmt); 
+        
+        // [Balance] Merge: Start 30s, Decrease 0.5s/Lv
+        // Starts at 30,000ms. 
+        const currentMaxTime = Math.max(2000, 30000 - ((autoMergeSpeedLevel - 1) * 500)); 
+        const increment = (50 / currentMaxTime) * 100; 
+        mergeProgress += increment; 
+        
+        if (mergeProgress >= 100) { 
+            mergeProgress = 0; 
+            autoMergeLowest(); 
+        } 
+    } 
+    if (dungeonActive && window.updateBattle) updateBattle(); 
+    updateUI(); 
+}
+
 function updateUI() { document.getElementById('gold-display').innerText = fNum(gold); const m = document.getElementById('mine-bar'); if(m) m.style.width=mineProgress+'%'; const g = document.getElementById('merge-bar'); if(g) g.style.width=mergeProgress+'%'; document.getElementById('pickaxe-name').innerText = TOOTH_DATA.pickaxes[pickaxeIdx].name; saveGame(); }
 function renderInventory() { const grid = document.getElementById('inventory-grid'); grid.innerHTML = ''; for (let i = 0; i < 56; i++) { const slot = document.createElement('div'); slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= maxSlots ? 'locked-slot' : ''}`; slot.dataset.index = i; slot.id = `slot-${i}`; if (i < maxSlots && inventory[i] > 0) { const dmg = fNum(getAtk(inventory[i])); slot.innerHTML = `<span class="dmg-label">⚔️${dmg}</span>${getToothIcon(inventory[i])}<span class="lv-text">Lv.${inventory[i]}</span>`; } else if (i >= maxSlots) slot.innerHTML = "🔒"; if (i < maxSlots) { slot.onpointerdown = (e) => { if (inventory[i] > 0) { const currentTime = new Date().getTime(); const tapLength = currentTime - lastTapTime; if (tapLength < 300 && tapLength > 0 && lastTapIdx === i) { e.preventDefault(); massMerge(inventory[i]); lastTapTime = 0; return; } lastTapTime = currentTime; lastTapIdx = i; e.preventDefault(); dragStartIdx = i; slot.classList.add('picked'); dragProxy.innerHTML = getToothIcon(inventory[i]); dragProxy.style.display = 'block'; moveProxy(e); slot.setPointerCapture(e.pointerId); } }; slot.onpointermove = (e) => { if (dragStartIdx !== null) moveProxy(e); }; slot.onpointerup = (e) => { if (dragStartIdx !== null) { slot.releasePointerCapture(e.pointerId); slot.classList.remove('picked'); dragProxy.style.display = 'none'; const elements = document.elementsFromPoint(e.clientX, e.clientY); const targetSlot = elements.find(el => el.classList.contains('slot') && el !== slot); if (targetSlot) { const toIdx = parseInt(targetSlot.dataset.index); if (toIdx < maxSlots) handleMoveOrMerge(dragStartIdx, toIdx); } document.querySelectorAll('.slot').forEach(s => s.classList.remove('drag-target')); dragStartIdx = null; } }; } grid.appendChild(slot); } }
 function handleMoveOrMerge(from, to) { if (from === to) return; if (inventory[from] === inventory[to] && inventory[from] > 0) { const pick = TOOTH_DATA.pickaxes[pickaxeIdx]; const currentGreatChance = greatChanceLevel * 0.02; const isGreat = Math.random() < currentGreatChance; const nextLv = isGreat ? inventory[from] + 2 : inventory[from] + 1; inventory[to] = nextLv; inventory[from] = 0; if(isGreat) triggerGreatSuccess(to); else playSfx('merge'); } else { [inventory[from], inventory[to]] = [inventory[to], inventory[from]]; } renderInventory(); saveGame(); }
