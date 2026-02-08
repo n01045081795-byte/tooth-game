@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v6.6.1 (Fix)</title>
-    <link rel="stylesheet" href="style.css?v=6.6.1">
+    <title>치아 연대기 v6.6.3 (Intro)</title>
+    <link rel="stylesheet" href="style.css?v=6.6.3">
 </head>
 <body>
+    <div id="intro-layer">
+        <video id="intro-video" playsinline muted autoplay>
+            <source src="assets/intro.mp4" type="video/mp4">
+        </video>
+        <button id="skip-btn" onclick="skipIntro()">SKIP ⏩</button>
+    </div>
+
     <div id="game-container">
         <nav id="top-nav">
             <button onclick="switchView('mine')" id="tab-mine" class="active">⛏️ 채굴/합성</button>
@@ -153,8 +160,8 @@
     <div id="drag-proxy"></div>
     <div id="shop-modal"><div id="shop-content"></div></div>
 
-    <script src="data.js?v=6.6.1"></script>
-    <script src="battle.js?v=6.6.1"></script>
-    <script src="script.js?v=6.6.1"></script>
+    <script src="data.js?v=6.6.3"></script>
+    <script src="battle.js?v=6.6.3"></script>
+    <script src="script.js?v=6.6.3"></script>
 </body>
 </html>
