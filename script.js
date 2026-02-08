@@ -1,4 +1,4 @@
-// Version: 6.6.4 - Intro Sound Fix & Logic
+// Version: 6.6.5 - Intro Touch Logic Fix
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -31,50 +31,51 @@ const MAX_GREAT_LV = 25;
 const MAX_GLOBAL_CD = 45; 
 const MAX_GLOBAL_RNG = 50; 
 
-// --- [인트로 로직 수정됨] ---
+// --- [인트로 로직: 터치 기반 재생] ---
 
 window.onload = () => { 
     loadGame(); 
     setupMiningTouch(); 
     switchView('mine'); 
 
-    // 인트로 시청 여부 확인
-    const introSeen = localStorage.getItem('toothIntroSeen_v2'); // 키 변경 (재생 테스트용)
+    // 인트로 시청 여부 확인 (버전 v3로 변경하여 테스트)
+    const introSeen = localStorage.getItem('toothIntroSeen_v3');
     
     if (introSeen === 'true') {
         document.getElementById('intro-layer').style.display = 'none';
         checkNicknameAndStart();
     } else {
-        // 인트로 레이어는 CSS에 의해 이미 떠 있음
-        // 사용자가 버튼을 누르기를 기다림 (startIntro 함수 호출)
+        // 인트로 레이어는 CSS에 의해 떠 있음.
+        // 사용자가 '터치 버튼'을 누르기를 기다림.
     }
 };
 
-// "터치하여 게임 시작" 버튼을 눌렀을 때 실행
+// 사용자가 화면을 터치하면 실행됨 (소리 재생 권한 획득)
 function startIntro() {
     const btnLayer = document.getElementById('start-btn-layer');
     const vid = document.getElementById('intro-video');
     const skipBtn = document.getElementById('skip-btn');
     
-    // 1. 버튼 숨기기
+    // 1. 터치 유도 버튼 숨기기
     btnLayer.style.display = 'none';
     
-    // 2. 비디오 보이기 및 재생 (소리 포함)
+    // 2. 비디오 및 스킵 버튼 보이기
     vid.style.display = 'block';
     skipBtn.style.display = 'block';
     
-    vid.volume = 1.0; // 소리 켜기
-    vid.muted = false; // 음소거 해제
+    // 3. 소리 설정 및 재생
+    vid.volume = 1.0; 
+    vid.muted = false; 
     
     vid.play().then(() => {
-        console.log("인트로 재생 시작");
+        console.log("인트로 재생 성공");
     }).catch(e => {
         console.error("재생 실패:", e);
-        alert("재생 오류. 스킵합니다.");
+        // 만약 재생 실패하면 바로 게임으로 진입 (멈춤 방지)
         finishIntro();
     });
 
-    // 3. 영상이 끝나면
+    // 4. 영상이 끝나면
     vid.onended = () => {
         setTimeout(finishIntro, 500); 
     };
@@ -89,13 +90,13 @@ function skipIntro() {
 function finishIntro() {
     const layer = document.getElementById('intro-layer');
     
-    // 페이드 아웃
+    // 페이드 아웃 효과
     layer.style.transition = 'opacity 1.5s ease';
     layer.style.opacity = '0';
     
     setTimeout(() => {
         layer.style.display = 'none';
-        localStorage.setItem('toothIntroSeen_v2', 'true');
+        localStorage.setItem('toothIntroSeen_v3', 'true');
         checkNicknameAndStart();
     }, 1500);
 }
@@ -118,7 +119,7 @@ function startGameLoop() {
     gameLoopInterval = setInterval(gameLoop, 50);
 }
 
-// --- [기존 게임 로직 유지] ---
+// --- [기존 게임 로직] ---
 
 function saveGame() {
     if (isResetting) return; 
