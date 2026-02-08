@@ -1,4 +1,4 @@
-// Version: 6.6.3 - Intro & Asset Logic
+// Version: 6.6.4 - Intro Sound Fix & Logic
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -20,7 +20,7 @@ let greatChanceLevel = 0;
 let nickname = ""; 
 
 let isResetting = false;
-let gameLoopInterval = null; // 게임 루프 제어용
+let gameLoopInterval = null; 
 
 const dragProxy = document.getElementById('drag-proxy');
 let lastTapTime = 0; let lastTapIdx = -1;
@@ -31,41 +31,53 @@ const MAX_GREAT_LV = 25;
 const MAX_GLOBAL_CD = 45; 
 const MAX_GLOBAL_RNG = 50; 
 
-// --- [인트로 및 초기화 로직] ---
+// --- [인트로 로직 수정됨] ---
 
 window.onload = () => { 
-    loadGame(); // 데이터 로드
+    loadGame(); 
     setupMiningTouch(); 
     switchView('mine'); 
 
-    // 인트로 시청 여부 확인 (버전별로 관리 가능)
-    const introSeen = localStorage.getItem('toothIntroSeen_v1');
+    // 인트로 시청 여부 확인
+    const introSeen = localStorage.getItem('toothIntroSeen_v2'); // 키 변경 (재생 테스트용)
     
     if (introSeen === 'true') {
-        // 이미 봤으면 인트로 숨기고 바로 시작
         document.getElementById('intro-layer').style.display = 'none';
         checkNicknameAndStart();
     } else {
-        // 처음이면 인트로 재생
-        playIntro();
+        // 인트로 레이어는 CSS에 의해 이미 떠 있음
+        // 사용자가 버튼을 누르기를 기다림 (startIntro 함수 호출)
     }
 };
 
-function playIntro() {
-    const layer = document.getElementById('intro-layer');
+// "터치하여 게임 시작" 버튼을 눌렀을 때 실행
+function startIntro() {
+    const btnLayer = document.getElementById('start-btn-layer');
     const vid = document.getElementById('intro-video');
+    const skipBtn = document.getElementById('skip-btn');
     
-    layer.style.display = 'flex';
+    // 1. 버튼 숨기기
+    btnLayer.style.display = 'none';
     
-    // 영상이 끝나면
-    vid.onended = () => {
-        setTimeout(finishIntro, 500); // 0.5초 뒤 페이드아웃 시작
-    };
+    // 2. 비디오 보이기 및 재생 (소리 포함)
+    vid.style.display = 'block';
+    skipBtn.style.display = 'block';
     
-    // 영상 재생 시도
-    vid.play().catch(e => {
-        console.log("자동 재생 차단됨. 스킵 버튼을 눌러주세요.");
+    vid.volume = 1.0; // 소리 켜기
+    vid.muted = false; // 음소거 해제
+    
+    vid.play().then(() => {
+        console.log("인트로 재생 시작");
+    }).catch(e => {
+        console.error("재생 실패:", e);
+        alert("재생 오류. 스킵합니다.");
+        finishIntro();
     });
+
+    // 3. 영상이 끝나면
+    vid.onended = () => {
+        setTimeout(finishIntro, 500); 
+    };
 }
 
 function skipIntro() {
@@ -77,20 +89,18 @@ function skipIntro() {
 function finishIntro() {
     const layer = document.getElementById('intro-layer');
     
-    // 페이드 아웃 효과
+    // 페이드 아웃
     layer.style.transition = 'opacity 1.5s ease';
     layer.style.opacity = '0';
     
-    // 애니메이션 끝난 후 레이어 제거 및 게임 시작 단계로
     setTimeout(() => {
         layer.style.display = 'none';
-        localStorage.setItem('toothIntroSeen_v1', 'true');
+        localStorage.setItem('toothIntroSeen_v2', 'true');
         checkNicknameAndStart();
     }, 1500);
 }
 
 function checkNicknameAndStart() {
-    // 닉네임이 없으면 모달 띄우기
     if (!nickname) {
         const nickInput = document.getElementById('nickname-input');
         const nickModal = document.getElementById('nickname-modal');
@@ -99,7 +109,6 @@ function checkNicknameAndStart() {
             nickModal.style.display = 'flex';
         }
     } else {
-        // 닉네임 있으면 게임 루프 시작
         startGameLoop();
     }
 }
@@ -109,7 +118,7 @@ function startGameLoop() {
     gameLoopInterval = setInterval(gameLoop, 50);
 }
 
-// --- [기존 게임 로직] ---
+// --- [기존 게임 로직 유지] ---
 
 function saveGame() {
     if (isResetting) return; 
@@ -164,8 +173,6 @@ function loadGame() {
             }
         }
         
-        // *주의: loadGame에서는 닉네임 모달을 띄우지 않고, checkNicknameAndStart에서 처리함*
-
         cleanupInventory();
         updateSoundBtn();
         updatePickaxeVisual();
@@ -184,7 +191,7 @@ function confirmNickname() {
         nickname = input;
         document.getElementById('nickname-modal').style.display = 'none';
         saveGame();
-        startGameLoop(); // 닉네임 설정 후 게임 시작
+        startGameLoop(); 
     } else {
         alert("닉네임을 입력해주세요.");
     }
@@ -216,8 +223,6 @@ function generateRankings() {
 
     const myPower = calculateTotalPower();
     let ranks = [];
-
-    const botNamesList = (TOOTH_DATA && TOOTH_DATA.botNames) ? TOOTH_DATA.botNames : ["User-Bot1", "User-Bot2"];
 
     let myRank = 9999;
     if (unlockedDungeon > 20) {
