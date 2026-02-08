@@ -1,4 +1,4 @@
-// Version: 6.6.2 - Shop UI Compact & Timing Balance
+// Version: 6.6.3 - Intro & Asset Logic
 let gold = 0; 
 let unlockedDungeon = 1; 
 let pickaxeIdx = 0;
@@ -20,6 +20,7 @@ let greatChanceLevel = 0;
 let nickname = ""; 
 
 let isResetting = false;
+let gameLoopInterval = null; // 게임 루프 제어용
 
 const dragProxy = document.getElementById('drag-proxy');
 let lastTapTime = 0; let lastTapIdx = -1;
@@ -29,6 +30,86 @@ const MAX_AUTO_MERGE_LV = 15;
 const MAX_GREAT_LV = 25; 
 const MAX_GLOBAL_CD = 45; 
 const MAX_GLOBAL_RNG = 50; 
+
+// --- [인트로 및 초기화 로직] ---
+
+window.onload = () => { 
+    loadGame(); // 데이터 로드
+    setupMiningTouch(); 
+    switchView('mine'); 
+
+    // 인트로 시청 여부 확인 (버전별로 관리 가능)
+    const introSeen = localStorage.getItem('toothIntroSeen_v1');
+    
+    if (introSeen === 'true') {
+        // 이미 봤으면 인트로 숨기고 바로 시작
+        document.getElementById('intro-layer').style.display = 'none';
+        checkNicknameAndStart();
+    } else {
+        // 처음이면 인트로 재생
+        playIntro();
+    }
+};
+
+function playIntro() {
+    const layer = document.getElementById('intro-layer');
+    const vid = document.getElementById('intro-video');
+    
+    layer.style.display = 'flex';
+    
+    // 영상이 끝나면
+    vid.onended = () => {
+        setTimeout(finishIntro, 500); // 0.5초 뒤 페이드아웃 시작
+    };
+    
+    // 영상 재생 시도
+    vid.play().catch(e => {
+        console.log("자동 재생 차단됨. 스킵 버튼을 눌러주세요.");
+    });
+}
+
+function skipIntro() {
+    const vid = document.getElementById('intro-video');
+    vid.pause();
+    finishIntro();
+}
+
+function finishIntro() {
+    const layer = document.getElementById('intro-layer');
+    
+    // 페이드 아웃 효과
+    layer.style.transition = 'opacity 1.5s ease';
+    layer.style.opacity = '0';
+    
+    // 애니메이션 끝난 후 레이어 제거 및 게임 시작 단계로
+    setTimeout(() => {
+        layer.style.display = 'none';
+        localStorage.setItem('toothIntroSeen_v1', 'true');
+        checkNicknameAndStart();
+    }, 1500);
+}
+
+function checkNicknameAndStart() {
+    // 닉네임이 없으면 모달 띄우기
+    if (!nickname) {
+        const nickInput = document.getElementById('nickname-input');
+        const nickModal = document.getElementById('nickname-modal');
+        if (nickInput && nickModal) {
+            nickInput.value = generateRandomId();
+            nickModal.style.display = 'flex';
+        }
+    } else {
+        // 닉네임 있으면 게임 루프 시작
+        startGameLoop();
+    }
+}
+
+function startGameLoop() {
+    if (gameLoopInterval) clearInterval(gameLoopInterval);
+    gameLoopInterval = setInterval(gameLoop, 50);
+}
+
+// --- [기존 게임 로직] ---
 
 function saveGame() {
     if (isResetting) return; 
@@ -45,7 +126,7 @@ function saveGame() {
 function loadGame() {
     try {
         const saved = localStorage.getItem('toothSaveV661');
-        const legacy = localStorage.getItem('toothSaveV660') || localStorage.getItem('toothSaveV650') || localStorage.getItem('toothSaveV600') || localStorage.getItem('toothSaveV500');
+        const legacy = localStorage.getItem('toothSaveV660');
         
         let d = null;
         if (saved) d = JSON.parse(saved);
@@ -70,12 +151,9 @@ function loadGame() {
             if (!isMiningPaused && d.lastTime) {
                 const offTime = (Date.now() - d.lastTime) / 1000;
                 
-                // [Balance] 오프라인 계산도 새로운 공식 적용
-                // Mine: Start 10s -> Decrease
                 const miningSpeed = Math.max(1, 10 - ((autoMineLevel - 1) * 0.2));
                 const minedCount = Math.floor(offTime / miningSpeed); 
                 
-                // Merge: Start 30s -> Decrease (Slower than mine)
                 const currentMaxTime = Math.max(2000, 30000 - ((autoMergeSpeedLevel - 1) * 500));
                 const merges = Math.floor((offTime * 1000) / currentMaxTime);
                 
@@ -86,14 +164,7 @@ function loadGame() {
             }
         }
         
-        if (!nickname) {
-            const nickInput = document.getElementById('nickname-input');
-            const nickModal = document.getElementById('nickname-modal');
-            if (nickInput && nickModal) {
-                nickInput.value = generateRandomId();
-                nickModal.style.display = 'flex';
-            }
-        }
+        // *주의: loadGame에서는 닉네임 모달을 띄우지 않고, checkNicknameAndStart에서 처리함*
 
         cleanupInventory();
         updateSoundBtn();
@@ -113,6 +184,7 @@ function confirmNickname() {
         nickname = input;
         document.getElementById('nickname-modal').style.display = 'none';
         saveGame();
+        startGameLoop(); // 닉네임 설정 후 게임 시작
     } else {
         alert("닉네임을 입력해주세요.");
     }
@@ -218,7 +290,6 @@ function renderShopItems() {
     
     let expansionCount = (maxSlots - 24) / 8;
     
-    // [UI Change] Header with Exit Button
     let html = `
         <div class="shop-header">
             <span style="font-weight:bold; color:var(--gold); font-size:16px;">Upgrade Lab 🧪</span>
@@ -231,7 +302,6 @@ function renderShopItems() {
     const pick = TOOTH_DATA.pickaxes[pickaxeIdx];
     const pickNext = TOOTH_DATA.pickaxes[pickaxeIdx + 1];
     
-    // 1. Pickaxe
     if (pickNext) {
         html += `
         <div class="shop-item">
@@ -246,7 +316,6 @@ function renderShopItems() {
         </div>`;
     }
 
-    // 2. Amulet
     const curGreat = greatChanceLevel * 2; 
     if (greatChanceLevel < MAX_GREAT_LV) {
         const amuletCost = Math.floor(5000 * Math.pow(1.5, greatChanceLevel));
@@ -263,8 +332,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 3. Auto Mine (Balance Updated)
-    // Formula: 10s - (level-1)*0.2
     const curSpd = Math.max(1, 10 - ((autoMineLevel-1) * 0.2)).toFixed(1);
     if (autoMineLevel < MAX_AUTO_MINE_LV) {
         const autoCost = Math.floor(500 * Math.pow(1.4, autoMineLevel - 1));
@@ -282,8 +349,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 4. Auto Merge (Balance Updated)
-    // Formula: 30s - (level-1)*0.5
     const curMerge = Math.max(2, 30 - ((autoMergeSpeedLevel-1) * 0.5)).toFixed(1);
     if (autoMergeSpeedLevel < MAX_AUTO_MERGE_LV) {
         const mergeCost = Math.floor(1000 * Math.pow(1.6, autoMergeSpeedLevel - 1));
@@ -301,7 +366,6 @@ function renderShopItems() {
         </div>`;
     }
     
-    // 5. Inventory Expansion
     if (expansionCount < 4) {
         const expCost = TOOTH_DATA.invExpansion[expansionCount];
         html += `
@@ -317,7 +381,7 @@ function renderShopItems() {
         </div>`;
     }
     
-    html += `</div>`; // Close grid
+    html += `</div>`;
     content.innerHTML = html;
 }
 
@@ -474,13 +538,10 @@ function processMining(amt) { mineProgress += amt; if (mineProgress >= 100) { mi
 
 function gameLoop() { 
     if(!isMiningPaused) { 
-        // [Balance] Mining: Start 10s, Decrease 0.2s/Lv
         const miningSpeedSec = Math.max(1, 10 - ((autoMineLevel - 1) * 0.2)); 
         const tickAmt = 100 / (miningSpeedSec * 20); 
         processMining(tickAmt); 
         
-        // [Balance] Merge: Start 30s, Decrease 0.5s/Lv
-        // Starts at 30,000ms. 
         const currentMaxTime = Math.max(2000, 30000 - ((autoMergeSpeedLevel - 1) * 500)); 
         const increment = (50 / currentMaxTime) * 100; 
         mergeProgress += increment; 
@@ -592,4 +653,3 @@ function closeShop() { document.getElementById('shop-modal').style.display = 'no
 function manualMine() {} 
 const originalPlaySfx = window.playSfx; window.playSfx = function(name) { if (isMuted) return; if (document.hidden) return; if (name === 'mine' || name === 'merge' || name === 'great') { if (currentView !== 'mine' && currentView !== 'refine') return; } if (name === 'upgrade') { if (currentView !== 'refine') return; } if (name === 'attack' || name === 'hit' || name === 'damage') { if (currentView !== 'war') return; } if (originalPlaySfx) originalPlaySfx(name); };
 document.addEventListener("visibilitychange", () => { if (document.hidden) { if(audioCtx && audioCtx.state === 'running') audioCtx.suspend(); } else { if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); } });
-window.onload = () => { loadGame(); setupMiningTouch(); switchView('mine'); setInterval(gameLoop, 50); };
