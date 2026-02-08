@@ -1,167 +1,114 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v6.6.3 (Intro)</title>
-    <link rel="stylesheet" href="style.css?v=6.6.3">
-</head>
-<body>
-    <div id="intro-layer">
-        <video id="intro-video" playsinline muted autoplay>
-            <source src="assets/intro.mp4" type="video/mp4">
-        </video>
-        <button id="skip-btn" onclick="skipIntro()">SKIP ⏩</button>
-    </div>
+// Version: 6.6.3 - Intro & Asset Structure
+const TOOTH_DATA = {
+    icons: ["🦷", "🦴", "💎", "✨", "🔥", "🧊", "⚡", "🌈", "🔱", "🌑", "☀️", "🔮", "🧿", "💠", "🏵️", "🍀", "🍃", "🎃", "🥊", "⚔️", "🏹", "🛡️", "🧬", "🧪", "🦾", "📡", "🛸", "🪐", "🌟", "🌌", "🌋", "🐲", "👾", "🤖", "🤡", "👹", "👑", "💎", "🦷", "💠"],
+    pickaxes: [
+        { name: "허름한 나무 곡괭이", cost: 0, luck: 0, icon: "🪵" },
+        { name: "무딘 구리 곡괭이", cost: 300, luck: 0.10, icon: "🪨" }, 
+        { name: "튼튼한 철 곡괭이", cost: 2000, luck: 0.20, icon: "⛏️" }, 
+        { name: "연마된 강철 곡괭이", cost: 15000, luck: 0.30, icon: "⚔️" },
+        { name: "빛나는 황금 곡괭이", cost: 100000, luck: 0.40, icon: "⚜️" },
+        { name: "고강도 티타늄 곡괭이", cost: 800000, luck: 0.50, icon: "💠" },
+        { name: "영롱한 다이아 곡괭이", cost: 5000000, luck: 0.60, icon: "💎" },
+        { name: "카본 초합금 곡괭이", cost: 50000000, luck: 0.70, icon: "🔮" },
+        { name: "신화의 오리할콘 곡괭이", cost: 1000000000, luck: 0.80, icon: "👑" }
+    ],
+    mercenaries: [
+        { id: 0, name: "농부 듀드", cost: 0, atkMul: 1.0, baseHp: 100, spd: 1.0, icon: "👨‍🌾" },
+        { id: 1, name: "마을 경비병", cost: 500, atkMul: 1.2, baseHp: 150, spd: 1.1, icon: "👮‍♂️" },
+        { id: 2, name: "견습 검사", cost: 3000, atkMul: 1.5, baseHp: 200, spd: 1.2, icon: "🤺" },
+        { id: 3, name: "숙련된 사냥꾼", cost: 12000, atkMul: 1.8, baseHp: 180, spd: 1.3, icon: "🏹" },
+        { id: 4, name: "왕국 기사", cost: 50000, atkMul: 2.2, baseHp: 300, spd: 1.1, icon: "💂‍♂️" },
+        { id: 5, name: "전투 사제", cost: 200000, atkMul: 2.6, baseHp: 250, spd: 1.2, icon: "🧙‍♂️" },
+        { id: 6, name: "그림자 암살자", cost: 800000, atkMul: 3.2, baseHp: 200, spd: 1.5, icon: "🥷" },
+        { id: 7, name: "엘프 명사수", cost: 3000000, atkMul: 4.0, baseHp: 280, spd: 1.4, icon: "🧝‍♀️" },
+        { id: 8, name: "오크 전사", cost: 10000000, atkMul: 5.0, baseHp: 500, spd: 1.0, icon: "👹" },
+        { id: 9, name: "드워프 공학자", cost: 40000000, atkMul: 6.5, baseHp: 400, spd: 1.2, icon: "👷" },
+        { id: 10, name: "화염 마법사", cost: 150000000, atkMul: 8.5, baseHp: 350, spd: 1.3, icon: "🔥" },
+        { id: 11, name: "냉기 마녀", cost: 600000000, atkMul: 11.0, baseHp: 400, spd: 1.3, icon: "❄️" },
+        { id: 12, name: "강철의 골렘", cost: 2500000000, atkMul: 15.0, baseHp: 1000, spd: 0.8, icon: "🤖" },
+        { id: 13, name: "뱀파이어 로드", cost: 10000000000, atkMul: 20.0, baseHp: 600, spd: 1.4, icon: "🧛" },
+        { id: 14, name: "드래곤 슬레이어", cost: 50000000000, atkMul: 30.0, baseHp: 800, spd: 1.3, icon: "🐲" },
+        { id: 15, name: "성기사 단장", cost: 200000000000, atkMul: 45.0, baseHp: 1200, spd: 1.2, icon: "⚜️" },
+        { id: 16, name: "차원 방랑자", cost: 1000000000000, atkMul: 70.0, baseHp: 900, spd: 1.6, icon: "🌌" },
+        { id: 17, name: "데몬 헌터", cost: 5000000000000, atkMul: 100.0, baseHp: 1500, spd: 1.5, icon: "😈" },
+        { id: 18, name: "천상의 수호자", cost: 25000000000000, atkMul: 150.0, baseHp: 2000, spd: 1.4, icon: "👼" },
+        { id: 19, name: "치아의 신", cost: 100000000000000, atkMul: 300.0, baseHp: 5000, spd: 2.0, icon: "🦷" }
+    ],
+    dungeons: [
+        "시작의 이끼 동굴", "낡은 해골 병영", "침묵의 지하 수로", "버려진 광산 심부", 
+        "혹한의 얼음 감옥", "작열하는 용암 터널", "맹독의 늪지대", "고대 거인의 무덤", 
+        "환영의 안개 숲", "천공의 무너진 성채", "심연의 수직 낙하", "차원의 균열 지대", 
+        "초월자의 시험장", "파멸의 잿더미", "영겁의 감시자 탑", "신의 영역: 입구", 
+        "황혼의 그림자 성소", "우주 너머의 공허", "혼돈의 끝자락", "카오스 울트라 최종장"
+    ],
+    dungeonMobs: [
+        { theme: 'bg-grass', mobs: ['🍄','🐌','🐛'], boss: '🥦' }, // 1
+        { theme: 'bg-stone', mobs: ['💀','🦴','🦇'], boss: '☠️' }, // 2
+        { theme: 'bg-water', mobs: ['🐀','💧','🐊'], boss: '🐙' }, // 3
+        { theme: 'bg-brick', mobs: ['🐜','🕷️','⛏️'], boss: '🗿' }, // 4
+        { theme: 'bg-ice', mobs: ['🐧','❄️','☃️'], boss: '🐻‍❄️' }, // 5
+        { theme: 'bg-lava', mobs: ['🔥','🦎','💣'], boss: '👹' }, // 6
+        { theme: 'bg-poison', mobs: ['🐸','🐍','🦠'], boss: '🐉' }, // 7
+        { theme: 'bg-dark', mobs: ['👻','🧟','🕯️'], boss: '🧛' }, // 8
+        { theme: 'bg-fog', mobs: ['🐺','🦉','🌫️'], boss: '🦌' }, // 9
+        { theme: 'bg-brick', mobs: ['🛡️','⚔️','🦅'], boss: '🤴' }, // 10
+        { theme: 'bg-water', mobs: ['🐡','🌪️','👁️'], boss: '🐋' }, // 11
+        { theme: 'bg-space', mobs: ['👽','🛸','👾'], boss: '🪐' }, // 12
+        { theme: 'bg-sky', mobs: ['👼','🕊️','☀️'], boss: '🗽' }, // 13
+        { theme: 'bg-stone', mobs: ['🦂','🐪','🌵'], boss: '🦁' }, // 14
+        { theme: 'bg-brick', mobs: ['🤖','🦾','📡'], boss: '🏗️' }, // 15
+        { theme: 'bg-sky', mobs: ['🌩️','🦅','🧚'], boss: '⚡' }, // 16
+        { theme: 'bg-dark', mobs: ['🥷','👺','🗡️'], boss: '👹' }, // 17
+        { theme: 'bg-space', mobs: ['🌟','☄️','🚀'], boss: '☀️' }, // 18
+        { theme: 'bg-chaos', mobs: ['🤡','🃏','🎭'], boss: '😈' }, // 19
+        { theme: 'bg-tooth', mobs: ['🍬','🍫','🦠'], boss: '👑' }  // 20
+    ],
+    // 가상 봇 이름 리스트 (10% 확률로 등장)
+    botNames: ["이빨요정", "치과무서워", "Driller", "Gold_Hunter", "사랑니", "임플란트", "충치균", "양치질", "스케일링", "치아왕", "강철턱", "GumGuard", "RootCanal", "MolarBear", "ToothHurty", "FlossBoss"],
+    invExpansion: [2000, 20000, 200000, 2000000]
+};
 
-    <div id="game-container">
-        <nav id="top-nav">
-            <button onclick="switchView('mine')" id="tab-mine" class="active">⛏️ 채굴/합성</button>
-            <button onclick="switchView('refine')" id="tab-refine">🔥 Top8 제련</button>
-            <button onclick="switchView('war')" id="tab-war">⚔️ 던전원정</button>
-        </nav>
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, type, duration, vol = 0.1) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+}
 
-        <header>
-            <div class="stats-bar">
-                <span>💰 <span id="gold-display">0</span></span>
-                <div class="control-group">
-                    <button id="sound-btn" onclick="toggleSound()" class="btn-toggle" style="background:#f1c40f; color:black;">🔊 ON</button>
-                    <button id="mine-toggle-btn" onclick="toggleMining()" class="btn-toggle" style="background:#e74c3c; color:white;">⏸️ 정지</button>
-                </div>
-            </div>
-        </header>
+function playSfx(name) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    switch (name) {
+        case 'mine': playTone(150, 'square', 0.1, 0.1); break;
+        case 'merge': playTone(400, 'sine', 0.1, 0.1); setTimeout(() => playTone(600, 'sine', 0.1, 0.1), 100); break;
+        case 'great': playTone(500, 'triangle', 0.1, 0.1); setTimeout(() => playTone(1000, 'triangle', 0.3, 0.1), 150); break;
+        case 'attack': playTone(800, 'sawtooth', 0.05, 0.05); break;
+        case 'hit': playTone(100, 'noise', 0.05, 0.1); break;
+        case 'upgrade': playTone(600, 'square', 0.1, 0.1); setTimeout(() => playTone(900, 'square', 0.1, 0.1), 100); break;
+        case 'damage': playTone(80, 'sawtooth', 0.2, 0.2); break;
+    }
+}
 
-        <main id="main-content">
-            <div id="mine-view">
-                <div id="mine-rock-area">
-                    <div id="giant-tooth">🦷</div>
-                    <div id="miner-char">⛏️</div>
-                </div>
-                <div id="pickaxe-info">
-                    <div id="pickaxe-name">허름한 나무 곡괭이</div>
-                    <div class="progress-wrapper">
-                        <span class="progress-label">자동채굴</span>
-                        <div class="progress-container"><div id="mine-bar"></div></div>
-                    </div>
-                    <div class="progress-wrapper">
-                        <span class="progress-label">자동합성</span>
-                        <div class="progress-container"><div id="merge-bar"></div></div>
-                    </div>
-                </div>
-            </div>
+function fNum(num) {
+    if (num < 1000) return Math.floor(num);
+    const units = ["", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"];
+    const unitIdx = Math.floor(Math.log10(num) / 3);
+    const shortNum = num / Math.pow(10, unitIdx * 3);
+    return shortNum.toFixed(2).replace(/\.00$/, "") + units[unitIdx];
+}
 
-            <div id="inventory-section">
-                <div id="action-bar">
-                    <button onclick="sortInventory()" class="btn-red">🔄 자동 정렬</button>
-                    <button onclick="openShop()" class="btn-gold">💎 Upgrade Lab</button>
-                </div>
-                <div id="inventory-scroll-area">
-                    <div id="inventory-grid"></div>
-                </div>
-                <div id="cheat-section">
-                    <div class="cheat-group-left">
-                        <input type="text" id="coupon-input" placeholder="쿠폰 입력">
-                        <button onclick="checkCoupon()" class="btn-sm" style="background:var(--gold); color:black;">확인</button>
-                    </div>
-                    <div class="cheat-group-right">
-                        <button onclick="openGuide()" class="btn-sm" style="background:#3498db; font-weight:bold;">📘설명</button>
-                        <button onclick="openRanking()" class="btn-sm" style="background:#9b59b6; font-weight:bold;">🏆랭킹</button>
-                        <button onclick="saveGame(); alert('저장완료');" class="btn-sm" style="background:#555;">저장</button>
-                        <button onclick="importSave()" class="btn-sm" style="background:#555;">로드</button>
-                    </div>
-                </div>
-            </div>
+function getAtk(lv) { return lv === 0 ? 0 : Math.floor(20 * Math.pow(1.6, lv - 1)); }
 
-            <div id="refine-view" style="display:none;">
-                <div class="refine-grid" id="refine-grid"></div>
-            </div>
-
-            <div id="war-view" style="display:none;">
-                <div id="mercenary-camp">
-                    <h4 style="color:var(--gold); margin:0 0 10px 5px;">🏰 용병 모집소</h4>
-                    <div id="mercenary-list"></div>
-                </div>
-                <div id="dungeon-list-container">
-                    <div id="dungeon-list"></div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="battle-screen">
-        <div id="battle-camera">
-            <div id="battle-world"></div>
-        </div>
-        
-        <div id="battle-ui-layer">
-            <div id="battle-header">
-                <span id="current-dungeon-name">던전 이름</span><br>
-                <span id="wave-info">WAVE 1/5</span>
-            </div>
-            <button onclick="exitDungeon()" class="btn-exit">후퇴</button>
-            <div id="war-weapon-slots"></div>
-            <div id="joystick-zone">
-                <div id="joystick-knob"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="dungeon-result-modal">
-        <div id="result-content">
-            <h2 id="result-title" style="color:var(--gold);">CLEAR!</h2>
-            <p id="result-desc">다음 던전이 오픈되었습니다.</p>
-            <button onclick="closeResultModal()" class="btn-gold" style="margin-top:20px;">확인</button>
-        </div>
-    </div>
-
-    <div id="nickname-modal">
-        <div id="nickname-content">
-            <h3 style="color:var(--gold);">🆔 닉네임 설정</h3>
-            <p style="font-size:12px; color:#ccc;">랭킹에 표시될 이름을 정해주세요.</p>
-            <input type="text" id="nickname-input" style="width:100%; padding:10px; margin:10px 0; text-align:center; font-weight:bold;">
-            <button onclick="confirmNickname()" class="btn-gold" style="width:100%;">시작하기</button>
-        </div>
-    </div>
-
-    <div id="ranking-modal" style="display:none;">
-        <div id="ranking-content">
-            <h2 style="color:var(--gold); margin-top:0;">🏆 명예의 전당</h2>
-            <div class="ranking-header">
-                <span>순위</span><span>이름</span><span>던전</span><span>전투력</span>
-            </div>
-            <div id="ranking-list" class="guide-scroll"></div>
-            <div id="my-rank-display" style="border-top:1px solid #555; padding-top:10px; margin-top:10px; color:var(--gold); font-weight:bold;"></div>
-            <button onclick="closeRanking()" class="btn-red" style="width:100%; margin-top:15px;">닫기</button>
-        </div>
-    </div>
-
-    <div id="guide-modal" style="display:none;">
-        <div id="guide-content">
-            <h2 style="color:var(--gold); margin-top:0;">📘 치아 연대기 가이드</h2>
-            <div class="guide-scroll">
-                <h3>1. ⚡ 빠른 조작 꿀팁</h3>
-                <p>👉 <b>더블 탭:</b> 인벤토리의 치아를 빠르게 두 번 누르면, 같은 레벨의 모든 치아가 한 번에 합성됩니다.</p>
-                <p>👉 <b>다중 터치:</b> 손가락 2~3개로 광석을 동시에 두드리면 채굴 속도가 훨씬 빨라집니다!</p>
-                
-                <h3>2. ⚔️ 전투와 인벤토리</h3>
-                <p>🏰 <b>Top 8 (상단 빨간 테두리):</b> 이곳은 전투에 나갈 <b>최정예 치아</b>를 두는 곳입니다.</p>
-                <p>🚫 <b>보호 구역:</b> Top 8 칸은 실수를 막기 위해 <b>자동 합성이나 더블 탭 합성이 되지 않습니다.</b> 수동으로 관리해주세요.</p>
-                <p>🔫 <b>릴레이 전투:</b> 1번부터 8번 슬롯까지 순서대로 공격합니다. 중간에 <b>빈칸</b>이 있으면 턴을 넘기며 시간을 낭비하니 꽉 채우세요!</p>
-                
-                <h3>3. 💎 업그레이드</h3>
-                <p>🍀 <b>곡괭이:</b> 상위 레벨 치아를 얻을 <b>행운</b>이 증가합니다.</p>
-                <p>🔥 <b>제련:</b> 던전을 클리어할 때마다 강화 슬롯이 하나씩 열립니다.</p>
-                <p>🏆 <b>랭킹:</b> 던전 진행도가 1순위, 공격력이 2순위입니다.</p>
-            </div>
-            <button onclick="closeGuide()" class="btn-red" style="width:100%; margin-top:15px;">닫기</button>
-        </div>
-    </div>
-
-    <div id="drag-proxy"></div>
-    <div id="shop-modal"><div id="shop-content"></div></div>
-
-    <script src="data.js?v=6.6.3"></script>
-    <script src="battle.js?v=6.6.3"></script>
-    <script src="script.js?v=6.6.3"></script>
-</body>
-</html>
+function getToothIcon(lv) {
+    if (lv === 0) return "";
+    let iconIdx = (lv - 1) % TOOTH_DATA.icons.length;
+    let color = `hsl(${(lv * 35) % 360}, 75%, 75%)`;
+    return `<div class="tooth-icon" style="color:${color}">${TOOTH_DATA.icons[iconIdx]}</div>`;
+}
