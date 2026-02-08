@@ -1,4 +1,4 @@
-/* Version: 6.6.4 - Intro Fix & Z-Index Update */
+/* Version: 6.6.5 - Touch Button Style */
 :root { --bg: #16213e; --red: #e94560; --blue: #0f3460; --gold: #f1c40f; --gray: #95a5a6; }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
 html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; margin: 0; background: #000; font-family: sans-serif; }
@@ -6,29 +6,35 @@ html, body { width: 100%; height: 100dvh; overflow: hidden; position: fixed; mar
 /* 인트로 레이어 (최상단 보장) */
 #intro-layer {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: #000; z-index: 20000; /* Z-Index 대폭 상향 */
+    background: #000; z-index: 20000; 
     display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
 #intro-video {
     width: 100%; height: 100%; object-fit: cover; display: none; /* 시작 전엔 숨김 */
 }
-/* 시작 버튼 (소리 재생을 위한 필수 버튼) */
+
+/* [핵심] 화면 전체를 덮는 투명 버튼 스타일 */
 #start-btn-layer {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     display: flex; justify-content: center; align-items: center;
-    background: rgba(0,0,0,0.8); z-index: 20001; cursor: pointer;
+    background: black; /* 배경을 검정으로 채워서 로딩 중 깜빡임 방지 */
+    z-index: 20001; cursor: pointer;
+    border: none; padding: 0; margin: 0; /* 버튼 기본 스타일 제거 */
 }
 #start-btn-text {
-    color: white; font-size: 24px; font-weight: bold; border: 2px solid var(--gold);
-    padding: 20px 40px; border-radius: 10px; background: rgba(0,0,0,0.5);
-    animation: blink 1s infinite;
+    color: white; font-size: 20px; font-weight: bold; 
+    border: 2px solid var(--gold); color: var(--gold);
+    padding: 15px 30px; border-radius: 50px; 
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+    animation: blink 1.5s infinite; pointer-events: none; /* 텍스트가 클릭 가리지 않게 */
 }
 
 #skip-btn {
     position: absolute; bottom: 50px; right: 20px;
     background: rgba(0,0,0,0.5); color: white; border: 1px solid white;
-    padding: 10px 20px; border-radius: 20px; cursor: pointer; 
-    z-index: 20002; display: none; /* 영상 시작 후 표시 */
+    padding: 8px 20px; border-radius: 20px; cursor: pointer; 
+    font-size: 14px; z-index: 20002; display: none; 
 }
 
 #game-container { width: 100%; max-width: 450px; height: 100dvh; background: var(--bg); color: white; margin: auto; display: flex; flex-direction: column; z-index: 1; }
