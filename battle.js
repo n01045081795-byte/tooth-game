@@ -1,4 +1,4 @@
-// Version: 7.1.0 - Dynamic Joystick & Battle Loop (Stable Camera & Multi-Touch Support)
+// Version: 6.9.5 - Dynamic Joystick (Mobile Touch-Action Fixed & Safe Spawn)
 
 window.playerMoveX = 0;
 window.playerMoveY = 0;
@@ -26,6 +26,12 @@ window.renderBattleSlots = function() {
 
     setupDynamicJoystick();
     
+    // 🌟 신규(버그 수정): 전투 화면 렌더링 시 플레이어 위치 중앙으로 강제 초기화
+    window.worldWidth = window.worldWidth || 2000;
+    window.worldHeight = window.worldHeight || 2000;
+    window.playerX = window.worldWidth / 2;
+    window.playerY = window.worldHeight / 2;
+    
     let curMerc = typeof TOOTH_DATA !== 'undefined' ? TOOTH_DATA.mercenaries[window.mercenaryIdx] : null;
     let trainingHpBonus = window.trainingLevels && window.trainingLevels.hp ? window.trainingLevels.hp * 0.05 : 0;
     let baseMaxHp = curMerc ? curMerc.baseHp : 100;
@@ -46,6 +52,7 @@ function setupDynamicJoystick() {
     
     if(!screen || !zone || !knob) return;
 
+    // 모바일 브라우저의 스와이프/스크롤 제스처 강제 차단!
     screen.style.touchAction = 'none';
 
     let isDragging = false;
@@ -63,6 +70,7 @@ function setupDynamicJoystick() {
         zone.style.display = 'none';
     }
 
+    // iOS 사파리 등에서 터치 이동 시 화면이 들썩거리는 현상 방지
     screen.addEventListener('touchmove', function(e) {
         if (isDragging) e.preventDefault();
     }, { passive: false });
@@ -111,8 +119,16 @@ function setupDynamicJoystick() {
         }
     };
 
-    screen.onpointerup = (e) => { stopDrag(); try { screen.releasePointerCapture(e.pointerId); } catch(err){} };
-    screen.onpointercancel = (e) => { stopDrag(); try { screen.releasePointerCapture(e.pointerId); } catch(err){} };
+    screen.onpointerup = (e) => {
+        stopDrag();
+        try { screen.releasePointerCapture(e.pointerId); } catch(err){}
+    };
+    
+    // 브라우저가 제스처로 착각해 터치를 뺏어갔을 때도 멈추도록 처리
+    screen.onpointercancel = (e) => {
+        stopDrag();
+        try { screen.releasePointerCapture(e.pointerId); } catch(err){}
+    };
 }
 
 function battleLoop() {
@@ -121,6 +137,7 @@ function battleLoop() {
     let baseSpeed = 6; 
     let curMerc = typeof TOOTH_DATA !== 'undefined' ? TOOTH_DATA.mercenaries[window.mercenaryIdx] : null;
     let mercSpd = curMerc ? curMerc.spd : 1.0;
+    
     let trainingSpdBonus = window.trainingLevels && window.trainingLevels.spd ? window.trainingLevels.spd * 0.1 : 0;
     let finalSpeed = baseSpeed * (mercSpd + trainingSpdBonus);
 
@@ -133,7 +150,10 @@ function battleLoop() {
     window.playerY = Math.max(30, Math.min(mapH - 30, window.playerY));
     
     const p = document.getElementById('player');
-    if (p) { p.style.left = window.playerX + 'px'; p.style.top = window.playerY + 'px'; }
+    if (p) {
+        p.style.left = window.playerX + 'px';
+        p.style.top = window.playerY + 'px';
+    }
 
     const worldDiv = document.getElementById('battle-world');
     if (worldDiv) {
@@ -148,22 +168,32 @@ function battleLoop() {
 
 window.takeDamage = function(dmg) {
     if (window.isInvincible) return;
+    
     const p = document.getElementById('player');
     const pFill = document.getElementById('player-hp-bar-fill');
+    
     let curMerc = typeof TOOTH_DATA !== 'undefined' ? TOOTH_DATA.mercenaries[window.mercenaryIdx] : null;
     let trainingHpBonus = window.trainingLevels && window.trainingLevels.hp ? window.trainingLevels.hp * 0.05 : 0;
     let baseMaxHp = curMerc ? curMerc.baseHp : 100;
     let maxHp = baseMaxHp * (1 + trainingHpBonus);
 
     if (window.currentHp === undefined || isNaN(window.currentHp)) window.currentHp = maxHp;
+    
     window.currentHp -= dmg;
     
     window.isInvincible = true;
     if (p) p.classList.add('invincible');
-    setTimeout(() => { window.isInvincible = false; if (p) p.classList.remove('invincible'); }, 500);
+    
+    setTimeout(() => {
+        window.isInvincible = false;
+        if (p) p.classList.remove('invincible');
+    }, 500);
 
     const scr = document.getElementById('battle-screen');
-    if(scr) { scr.style.background = 'rgba(255,0,0,0.3)'; setTimeout(() => { scr.style.background = ''; }, 100); }
+    if(scr) {
+        scr.style.background = 'rgba(255,0,0,0.3)';
+        setTimeout(() => { scr.style.background = ''; }, 100);
+    }
     
     if(pFill) pFill.style.width = Math.max(0, (window.currentHp / maxHp * 100)) + '%';
     try { if(typeof playSfx === 'function') playSfx('damage'); } catch(e){}
@@ -181,6 +211,7 @@ window.closeResultModal = function() {
         if(modal) modal.style.display = 'none';
         if(typeof window.exitDungeon === 'function') window.exitDungeon();
     } catch (e) {
+        console.error(e);
         document.getElementById('battle-screen').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
     }
