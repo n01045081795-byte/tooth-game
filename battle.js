@@ -1,4 +1,4 @@
-// Version: 6.9.5 - Dynamic Joystick (Mobile Touch-Action Fixed & Safe Spawn)
+// Version: 6.9.6 - Dynamic Joystick (Base Speed Nerfed for Upgrade Impact & Safe Spawn)
 
 window.playerMoveX = 0;
 window.playerMoveY = 0;
@@ -26,7 +26,7 @@ window.renderBattleSlots = function() {
 
     setupDynamicJoystick();
     
-    // 🌟 신규(버그 수정): 전투 화면 렌더링 시 플레이어 위치 중앙으로 강제 초기화
+    // 전투 화면 렌더링 시 플레이어 위치 중앙으로 강제 초기화 (버그 방지)
     window.worldWidth = window.worldWidth || 2000;
     window.worldHeight = window.worldHeight || 2000;
     window.playerX = window.worldWidth / 2;
@@ -134,7 +134,8 @@ function setupDynamicJoystick() {
 function battleLoop() {
     if (!window.dungeonActive || window.bossDead) return;
     
-    let baseSpeed = 6; 
+    // 🌟 [핵심 변경] 기본 이동 속도 대폭 감소 (6 -> 2.5) 업그레이드 체감 극대화!
+    let baseSpeed = 2.5; 
     let curMerc = typeof TOOTH_DATA !== 'undefined' ? TOOTH_DATA.mercenaries[window.mercenaryIdx] : null;
     let mercSpd = curMerc ? curMerc.spd : 1.0;
     
