@@ -1,4 +1,4 @@
-// Version: 6.9.5 - Main Engine (Optimized Inventory, Dials, HELLTEST)
+// Version: 6.9.6 - Main Engine (Nickname Update Logic, Dials, HELLTEST)
 
 window.gold = 0; 
 window.dia = 0; 
@@ -11,7 +11,6 @@ window.maxSlots = 24;
 window.mineProgress = 0;
 window.mergeProgress = 0;
 
-// 🌟 신규: 채굴과 합성 ON/OFF 개별 분리
 window.isAutoMineOn = true;
 window.isAutoMergeOn = true;
 
@@ -62,7 +61,6 @@ window.onload = () => {
         checkNicknameAndStart();
     }
     
-    // 버튼 초기 상태 반영
     updateToggleButtons();
 };
 
@@ -111,12 +109,26 @@ window.checkNicknameAndStart = function() {
     } else { startGameLoop(); }
 };
 
+// 🌟 [핵심 변경] 닉네임 변경 로직 업그레이드
 window.confirmNickname = function() {
     const input = document.getElementById('nickname-input').value.trim();
     if(input.length > 0) {
         window.nickname = input;
         document.getElementById('nickname-modal').style.display = 'none';
-        saveGame(); startGameLoop(); 
+        
+        // 설정 창이 열려있다면 즉시 닉네임 텍스트 업데이트
+        const nickDisp = document.getElementById('current-nickname-display');
+        if(nickDisp) nickDisp.innerText = window.nickname;
+
+        saveGame(); 
+        
+        // 게임이 처음 시작되는 상황인지, 게임 도중 닉네임을 변경한 상황인지 구분
+        if (!gameLoopInterval) {
+            startGameLoop(); 
+        } else {
+            alert("닉네임이 성공적으로 변경되었습니다!");
+            if(typeof window.generateRankings === 'function') window.generateRankings(); // 랭킹창 즉시 갱신
+        }
     } else { alert("닉네임을 입력해주세요."); }
 };
 
@@ -139,7 +151,7 @@ function saveGame() {
         lastTime: Date.now(), 
         isAutoMineOn: window.isAutoMineOn, isAutoMergeOn: window.isAutoMergeOn 
     };
-    localStorage.setItem('toothSaveV695', JSON.stringify(data));
+    localStorage.setItem('toothSaveV695', JSON.stringify(data)); // 세이브 파일 키는 호환성을 위해 유지
 }
 window.saveGame = saveGame;
 
@@ -155,7 +167,6 @@ function loadGame() {
             window.pickaxeIdx = d.pickaxeIdx || 0;
             window.autoMineLevel = d.autoMineLevel || 1; 
             
-            // 구버전 호환 처리 (isMiningPaused -> 개별 ON/OFF 변환)
             if (d.isMiningPaused !== undefined) {
                 window.isAutoMineOn = !d.isMiningPaused;
                 window.isAutoMergeOn = !d.isMiningPaused;
@@ -178,14 +189,12 @@ function loadGame() {
             if (d.lastTime) {
                 const offTime = (Date.now() - d.lastTime) / 1000;
                 
-                // 오프라인 자동 채굴
                 if (window.isAutoMineOn) {
                     const miningSpeed = Math.max(1, 10 - ((window.autoMineLevel - 1) * 0.2));
                     const minedCount = Math.floor(offTime / miningSpeed); 
                     for(let i=0; i < minedCount; i++) { if(!addMinedItem()) break; }
                 }
                 
-                // 오프라인 자동 합성
                 if (window.isAutoMergeOn) {
                     const currentMaxTime = Math.max(2000, 30000 - ((window.autoMergeSpeedLevel - 1) * 500));
                     const merges = Math.floor((offTime * 1000) / currentMaxTime);
@@ -305,7 +314,6 @@ function updateUI() {
     const m = document.getElementById('mine-bar'); 
     if(m) m.style.width = window.mineProgress + '%'; 
     
-    // 🌟 신규: 다이얼 게이지 업데이트 (원형 CSS 반영)
     const dial = document.getElementById('merge-dial'); 
     if(dial) {
         dial.style.background = `conic-gradient(#9b59b6 0%, #9b59b6 ${window.mergeProgress}%, #333 ${window.mergeProgress}%, #333 100%)`;
@@ -318,12 +326,10 @@ function updateUI() {
 }
 window.updateUI = updateUI;
 
-// 🌟 최적화: 인벤토리 DOM 재활용 (발열/렉 방지)
 function renderInventory() { 
     const grid = document.getElementById('inventory-grid'); 
     if(!grid) return;
     
-    // 최초 1회만 DOM 생성
     if (grid.children.length === 0) {
         for (let i = 0; i < 56; i++) { 
             const slot = document.createElement('div'); 
@@ -371,7 +377,6 @@ function renderInventory() {
         }
     }
     
-    // 데이터 갱신
     for (let i = 0; i < 56; i++) {
         const slot = document.getElementById(`slot-${i}`);
         if(!slot) continue;
@@ -484,7 +489,6 @@ function setupMiningTouch() {
 }
 window.setupMiningTouch = setupMiningTouch;
 
-// --- [ 5. 유틸리티 (쿠폰 및 토글) ] ---
 window.toggleAutoMine = function() { 
     window.isAutoMineOn = !window.isAutoMineOn; 
     updateToggleButtons();
@@ -517,14 +521,13 @@ window.checkCoupon = function(code) {
     else if (code === "TEST") { 
         window.gold += 1e25; 
         window.dia += 999999; 
-        alert("테스트용 절대 재화가 지급되었습니다! (골드 +1e25 / 다이아 +999,999)"); 
+        alert("테스트용 절대 재화가 지급되었습니다!"); 
         updateUI(); saveGame();
     }
-    // 🌟 신규: HELL 모드 해금 테스트용 쿠폰
     else if (code === "HELLTEST") {
-        window.unlockedDungeon = 20; // 19단계 모두 클리어 처리
-        window.gold += 1e15; // 골드 1000조
-        window.dia += 10000; // 다이아 1만개
+        window.unlockedDungeon = 20; 
+        window.gold += 1e15; 
+        window.dia += 10000; 
         alert("🔥 [HELL 테스트 완료] 19단계 클리어 & 1,000조 골드 / 10,000 다이아 지급! 20단계에 도전하세요!");
         updateUI(); saveGame();
         if(typeof renderDungeonList === 'function') window.renderDungeonList();
@@ -536,7 +539,7 @@ window.importSave = function() {
     const str = prompt("코드 붙여넣기:"); 
     if (str) { 
         try { 
-            const decoded = decodeURIComponent(escape(atob(str))); 
+            const decoded = decodeURIComponent(atob(str)); 
             localStorage.setItem('toothSaveV695', decoded); 
             location.reload(); 
         } catch (e) { alert("오류가 발생했습니다. 코드를 확인해주세요."); } 
