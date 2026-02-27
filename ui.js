@@ -1,7 +1,7 @@
-// Version: 6.9.5 - UI Controllers (Mercenary Modal, Dungeon Tabs, Centralized Rendering)
+// Version: 6.9.6 - UI Controllers (Rankings 500, Export Save, Nickname Change, Merc SPD)
 
 window.currentView = 'mine';
-window.currentDungeonTab = 'normal'; // normal, boss, hell, hellboss
+window.currentDungeonTab = 'normal';
 
 // --- [ 1. 메인 뷰 전환 ] ---
 window.switchView = function(viewName) {
@@ -28,7 +28,6 @@ window.switchView = function(viewName) {
         document.getElementById('war-view').style.display = 'flex';
         document.getElementById('tab-war').classList.add('active');
         
-        // 헬 모드 해금 체크 (일반 20단계 클리어 시 헬 탭 노출)
         if (window.unlockedDungeon > 20) {
             document.getElementById('d-tab-hell').style.display = 'inline-block';
             document.getElementById('d-tab-hellboss').style.display = 'inline-block';
@@ -41,7 +40,7 @@ window.switchView = function(viewName) {
     try { if(typeof playSfx === 'function') playSfx('hit'); } catch(e){}
 };
 
-// --- [ 2. 신규 던전 탭 전환 (토벌전/헬모드) ] ---
+// --- [ 2. 신규 던전 탭 전환 ] ---
 window.switchDungeonTab = function(tabName) {
     window.currentDungeonTab = tabName;
     
@@ -58,9 +57,7 @@ window.switchDungeonTab = function(tabName) {
     if(window.renderDungeonList) window.renderDungeonList();
 };
 
-// --- [ 3. 용병 캠프 및 모달 관리 (기획안 반영) ] ---
-
-// 메인 화면에는 현재 장착된 용병만 표시
+// --- [ 3. 용병 캠프 및 모달 관리 (이동 속도 추가) ] ---
 window.renderMercenaryCamp = function() { 
     const display = document.getElementById('current-mercenary-display');
     if(!display || typeof TOOTH_DATA === 'undefined') return;
@@ -78,7 +75,7 @@ window.renderMercenaryCamp = function() {
         <div style="font-size:40px; background:#1a1a2e; width:60px; height:60px; display:flex; align-items:center; justify-content:center; border-radius:10px; border:2px solid var(--gold);">${merc.icon}</div>
         <div style="flex:1;">
             <div style="font-size:16px; font-weight:bold; color:white;">${merc.name} <span style="font-size:12px; color:#aaa; font-weight:normal;">(Lv.${curId})</span></div>
-            <div style="font-size:11px; color:#ccc; margin-top:2px;">공격력 배수: <span style="color:var(--gold);">x${merc.atkMul}</span> | 기본 HP: <span style="color:#ff4757;">${safeFNum(merc.baseHp)}</span></div>
+            <div style="font-size:11px; color:#ccc; margin-top:2px;">공격 x<span style="color:var(--gold);">${merc.atkMul}</span> | 체력 <span style="color:#ff4757;">${safeFNum(merc.baseHp)}</span> | 이동속도 <span style="color:#3498db;">${merc.spd.toFixed(1)}</span></div>
             ${bonusText}
         </div>
     `;
@@ -94,7 +91,6 @@ window.closeMercenaryModal = function() {
     if(m) m.style.display = 'none';
 };
 
-// 모달창 내 전체 용병 리스트 렌더링
 window.renderMercenaryModalList = function() {
     const list = document.getElementById('mercenary-list-modal');
     if(!list || typeof TOOTH_DATA === 'undefined') return;
@@ -113,7 +109,7 @@ window.renderMercenaryModalList = function() {
             <div style="font-size:25px;">${merc.icon}</div>
             <div style="font-size:12px; font-weight:bold; margin:5px 0;">${merc.name}</div>
             <div style="font-size:10px; color:#aaa;">공격 x${merc.atkMul} ${tier6Text}</div>
-            <div style="font-size:10px; color:#f55;">HP ${safeFNum(merc.baseHp)}</div> 
+            <div style="font-size:10px; color:#f55;">HP ${safeFNum(merc.baseHp)} <span style="color:#3498db;">| 속도 ${merc.spd.toFixed(1)}</span></div> 
         `;
         if (isEquipped) {
             div.style.border = '2px solid #2ecc71';
@@ -274,32 +270,63 @@ window.showResultModal = function() {
     saveGame();
 };
 
+// 🌟 [핵심 변경] 랭킹 시스템 개편 (가상 유저 500명 생성 및 내 주변 순위 노출)
 window.generateRankings = function() {
     const list = document.getElementById('ranking-list');
     if(!list || typeof TOOTH_DATA === 'undefined') return;
-    let ranks = [
-        { name: "치아신", d: 20, p: 9999999 }, { name: "임플란트마스터", d: 19, p: 850000 },
-        { name: "발치왕", d: 17, p: 600000 }, { name: "Driller", d: 15, p: 450000 },
-        { name: "충치파괴자", d: 12, p: 200000 }, { name: "초보원장", d: 5, p: 15000 }
-    ];
+    
+    // 500명의 기본 User-xxxx 닉네임 자동 생성 (최초 1회만)
+    if (!window.fakeUsers || window.fakeUsers.length === 0) {
+        window.fakeUsers = [];
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        for(let i=0; i<500; i++) {
+            let hash = '';
+            for(let j=0; j<4; j++) hash += chars.charAt(Math.floor(Math.random()*chars.length));
+            // 기하급수적으로 전투력 분배 (대부분은 낮고, 소수만 높음)
+            let fakePower = Math.floor(Math.pow(Math.random(), 3) * 8000000) + 1000;
+            let fakeD = Math.floor(Math.random() * 20) + 1;
+            window.fakeUsers.push({ name: `User-${hash}`, d: fakeD, p: fakePower, isMe: false });
+        }
+    }
+
     let myPower = safeGetAtk(window.highestToothLevel);
     if (TOOTH_DATA.mercenaries[window.mercenaryIdx]) myPower *= TOOTH_DATA.mercenaries[window.mercenaryIdx].atkMul;
     
+    let ranks = [...window.fakeUsers]; // 가상 유저 복사
     let myData = { name: window.nickname || "나", d: window.unlockedDungeon, p: myPower, isMe: true };
     ranks.push(myData);
+    
+    // 전투력 순으로 정렬
     ranks.sort((a, b) => b.p - a.p);
     
-    let html = ''; let myRank = -1;
+    let html = ''; 
+    let myRankIdx = ranks.findIndex(r => r.isMe);
+    let myRank = myRankIdx + 1;
+
+    // 상위 10명 + 내 주변 5명만 필터링하여 출력
     ranks.forEach((r, idx) => {
-        if(r.isMe) myRank = idx + 1;
-        html += `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #333; ${r.isMe ? 'color:var(--gold); font-weight:bold;' : 'color:#ccc;'}">
-            <span style="width:15%;">${idx+1}</span><span style="flex:1; text-align:center;">${r.name}</span>
-            <span style="width:20%; text-align:center;">Lv.${r.d}</span><span style="width:25%; text-align:right;">${safeFNum(r.p)}</span>
-        </div>`;
+        let isTop10 = idx < 10;
+        let isNearMe = Math.abs(idx - myRankIdx) <= 5;
+
+        // 중간 생략 점선 표시 로직
+        if (idx === 10 && myRankIdx > 15) {
+            html += `<div style="text-align:center; color:#555; font-size:14px; padding:5px 0;">. . . . . .</div>`;
+        }
+
+        if (isTop10 || isNearMe) {
+            let rankColor = r.isMe ? 'color:var(--gold); font-weight:bold; background:rgba(241, 196, 15, 0.1);' : 'color:#ccc;';
+            if (idx === 0) rankColor += 'color:#ff4757; text-shadow:0 0 5px red; font-size:14px;'; // 1위 특수효과
+            
+            html += `<div style="display:flex; justify-content:space-between; padding:8px 5px; border-bottom:1px solid #333; ${rankColor} border-radius:4px;">
+                <span style="width:15%; text-align:center;">${idx+1}</span><span style="flex:1; text-align:center;">${r.name}</span>
+                <span style="width:20%; text-align:center;">Lv.${r.d}</span><span style="width:25%; text-align:right;">${safeFNum(r.p)}</span>
+            </div>`;
+        }
     });
+    
     list.innerHTML = html;
     const rankDisp = document.getElementById('my-rank-display');
-    if(rankDisp) rankDisp.innerText = `내 순위: ${myRank}위 (전투력: ${safeFNum(myPower)})`;
+    if(rankDisp) rankDisp.innerText = `내 순위: ${myRank}위 / ${ranks.length}명 (전투력: ${safeFNum(myPower)})`;
 };
 
 // --- [ 5. 치아 도감 ] ---
@@ -356,25 +383,60 @@ function renderCodex() {
 }
 window.renderCodex = renderCodex;
 
-// --- [ 6. 기타 모달 창 컨트롤 ] ---
-window.openRanking = function() {
-    const m = document.getElementById('ranking-modal');
-    if(m) { m.style.display = 'flex'; if(window.generateRankings) window.generateRankings(); }
-};
-window.closeRanking = function() {
-    const m = document.getElementById('ranking-modal');
-    if(m) m.style.display = 'none';
-};
-
+// --- [ 6. 시스템 설정 및 데이터 관리 (저장 코드, 닉네임) ] ---
 window.openSettings = function() {
     const m = document.getElementById('settings-modal');
-    if(m) m.style.display = 'flex';
+    if(m) { 
+        m.style.display = 'flex'; 
+        // 설정 창 열릴 때 닉네임 갱신
+        const nickDisp = document.getElementById('current-nickname-display');
+        if(nickDisp) nickDisp.innerText = window.nickname || "설정안됨";
+    }
 };
 window.closeSettings = function() {
     const m = document.getElementById('settings-modal');
     if(m) m.style.display = 'none';
 };
 
+window.openNicknameChange = function() {
+    const m = document.getElementById('nickname-modal');
+    if(m) {
+        m.style.display = 'flex';
+        const input = document.getElementById('nickname-input');
+        if(input) input.value = window.nickname || "";
+    }
+};
+
+window.exportSaveCode = function() {
+    const saveData = localStorage.getItem('toothSaveV695') || localStorage.getItem('toothSaveV680');
+    if (saveData) {
+        try {
+            // 한글 깨짐 방지를 위해 encodeURIComponent 후 base64 변환
+            const encoded = btoa(encodeURIComponent(saveData));
+            const textArea = document.getElementById('save-export-area');
+            if (textArea) {
+                textArea.style.display = 'block';
+                textArea.value = encoded;
+                textArea.select();
+                alert("저장 코드가 발급되었습니다. 텍스트를 전체 복사하여 안전한 곳에 보관하세요.");
+            }
+        } catch (e) { alert("코드 생성 중 오류가 발생했습니다."); }
+    } else {
+        alert("저장된 데이터가 없습니다. 먼저 수동 저장을 해주세요.");
+    }
+};
+
+window.promptCoupon = function() {
+    // 모달 클릭 방해를 막기 위해 setTimeout으로 호출
+    setTimeout(() => {
+        const code = prompt("쿠폰 코드를 입력하세요:");
+        if (code && typeof window.checkCoupon === 'function') {
+            window.checkCoupon(code);
+        }
+    }, 10);
+};
+
+// --- [ 기타 기능 ] ---
 window.showTierUnlock = function(level) {
     const m = document.getElementById('tier-unlock-modal');
     if(!m) return;
@@ -421,7 +483,7 @@ window.changeVolume = function() {
 window.checkReset = function() {
     if(confirm("정말로 모든 데이터를 삭제하시겠습니까? 복구할 수 없습니다!")) {
         window.isResetting = true;
-        localStorage.clear(); // 깔끔하게 모든 데이터 초기화
+        localStorage.clear(); 
         location.reload();
     }
 };
