@@ -1,4 +1,4 @@
-// Version: 6.9.7 - Combat Engine (Object Pooling Bug Fixed - Pool Reset)
+// Version: 7.2.0 - Combat Engine (Artifact Drop System, Pooling Optimized)
 
 window.dungeonActive = false;
 window.bossDead = false;
@@ -43,13 +43,12 @@ window.startDungeon = function(idx) {
     const worldDiv = document.getElementById('battle-world');
     battleScreen.style.display = 'block';
     
-    // 넓은 맵 2000x2000 사이즈 고정
     window.worldWidth = 2000;
     window.worldHeight = 2000;
     worldDiv.style.width = window.worldWidth + 'px';
     worldDiv.style.height = window.worldHeight + 'px';
 
-    // 배경 타일 복구 (battle-world에 배경을 입혀야 카메라 이동 시 자연스러움)
+    // 배경 타일 복구
     let theme = "bg-stone";
     if (window.isHellMode) {
         theme = (TOOTH_DATA.hellMobs[0] && TOOTH_DATA.hellMobs[0].theme) ? TOOTH_DATA.hellMobs[0].theme : "bg-hell";
@@ -66,14 +65,15 @@ window.startDungeon = function(idx) {
     if (window.isBossRush) dName = `[토벌전] ` + dName;
     document.getElementById('current-dungeon-name').innerText = dName;
     
+    // 던전 진입 시 초기화
     window.dungeonGoldEarned = 0;
     window.dungeonDiaEarned = 0;
+    window.dungeonArtifactDropped = null; // 🌟 유물 드랍 정보 초기화
     window.dungeonActive = true;
     window.bossDead = false;
     window.currentWave = 1;
     window.isBossWave = window.isBossRush ? true : false; 
     
-    // 🌟 [버그 해결] 던전 입장 시 모든 배열과 창고(Pool)를 완벽하게 비워줍니다.
     window.enemies = [];
     window.missiles = [];
     window.enemyMissiles = [];
@@ -86,13 +86,11 @@ window.startDungeon = function(idx) {
     window.playerX = window.worldWidth / 2;
     window.playerY = window.worldHeight / 2;
 
-    // 주인공 캐릭터를 용병 아이콘으로 완벽 적용
     let curMercIcon = "🦷";
     if (typeof TOOTH_DATA !== 'undefined' && TOOTH_DATA.mercenaries[window.mercenaryIdx]) {
         curMercIcon = TOOTH_DATA.mercenaries[window.mercenaryIdx].icon;
     }
     
-    // 💡 여기서 화면의 모든 HTML이 엎어쳐지기 때문에 창고(Pool) 비우기가 필수였습니다!
     worldDiv.innerHTML = `<div id="player" style="font-size: 40px; text-shadow: 0 0 5px rgba(255,255,255,0.5);">${curMercIcon}<div id="player-hp-bar-bg"><div id="player-hp-bar-fill"></div></div></div>`;
     
     const p = document.getElementById('player');
@@ -148,7 +146,6 @@ window.spawnEnemy = function(isBoss = false) {
     let icon = isBoss ? mobData.boss : mobData.mobs[Math.floor(Math.random() * mobData.mobs.length)];
 
     const angle = Math.random() * Math.PI * 2;
-    // 넓어진 맵(2000x2000)에 맞게 적 스폰 거리 확장
     const dist = 600; 
     let sx = window.playerX + Math.cos(angle) * dist; 
     let sy = window.playerY + Math.sin(angle) * dist;
@@ -274,7 +271,6 @@ window.updateCombat = function() {
         m.x += m.vx; m.y += m.vy;
         m.el.style.left = m.x + 'px'; m.el.style.top = m.y + 'px';
         
-        // 최적화: 삭제(remove) 대신 숨김(display = none) 처리 후 배열에서 제거
         if (Math.hypot(m.x - m.startX, m.y - m.startY) > 2000) { 
             m.el.style.display = 'none'; 
             window.missiles.splice(i, 1); 
@@ -328,7 +324,6 @@ window.updateCombat = function() {
                     });
                 }
 
-                // 최적화: 삭제(remove) 대신 숨김(display = none)
                 m.el.style.display = 'none'; 
                 window.missiles.splice(i, 1);
                 
@@ -350,7 +345,6 @@ window.updateCombat = function() {
         em.x += em.vx; em.y += em.vy;
         em.el.style.left = em.x + 'px'; em.el.style.top = em.y + 'px';
 
-        // 최적화: 삭제(remove) 대신 숨김
         if (Math.hypot(em.x - em.startX, em.y - em.startY) > 1500) { 
             em.el.style.display = 'none'; 
             window.enemyMissiles.splice(i, 1); 
@@ -359,7 +353,6 @@ window.updateCombat = function() {
 
         if (!window.isInvincible && Math.hypot(em.x - window.playerX, em.y - window.playerY) < 30) {
             if(window.takeDamage) window.takeDamage(em.dmg);
-            // 최적화: 삭제(remove) 대신 숨김
             em.el.style.display = 'none'; 
             window.enemyMissiles.splice(i, 1);
         }
@@ -371,7 +364,6 @@ window.playerShoot = function(slotIdx, target) {
     const worldDiv = document.getElementById('battle-world'); 
     if(!worldDiv) return;
 
-    // 풀(Pool)에서 안 쓰는 미사일을 찾아서 재사용
     let mEl = window.missilePool.find(el => el.style.display === 'none');
     if (!mEl) {
         mEl = document.createElement('div'); 
@@ -379,13 +371,12 @@ window.playerShoot = function(slotIdx, target) {
         worldDiv.appendChild(mEl);
         window.missilePool.push(mEl);
     }
-    mEl.style.display = 'block'; // 화면에 다시 보이게 함
+    mEl.style.display = 'block'; 
     mEl.innerHTML = typeof getToothIcon === 'function' ? getToothIcon(window.inventory[slotIdx]) : "🦷"; 
     
     const angle = Math.atan2(target.y - window.playerY, target.x - window.playerX); 
     const speed = 18; 
     
-    // 데미지 계산식 정상화 (용병 배수 및 훈련 보너스 완벽 반영)
     let refineMul = 1 + ((window.slotUpgrades && window.slotUpgrades[slotIdx]) ? window.slotUpgrades[slotIdx].atk * 0.1 : 0); 
     let baseAtk = typeof getAtk === 'function' ? getAtk(window.inventory[slotIdx]) : 10;
     
@@ -395,7 +386,6 @@ window.playerShoot = function(slotIdx, target) {
     let trainingAtkBonus = (window.trainingLevels && window.trainingLevels.atk) ? window.trainingLevels.atk * 0.1 : 0;
     let trainingMul = 1 + trainingAtkBonus;
 
-    // 최종 데미지 = 기본공격력 * 용병배수 * 제련증폭 * 훈련증폭
     let dmg = baseAtk * mercMul * refineMul * trainingMul; 
     
     let isCrit = false;
@@ -420,7 +410,6 @@ window.enemyShoot = function(ex, ey, angle, iconStr) {
     const worldDiv = document.getElementById('battle-world'); 
     if(!worldDiv) return;
     
-    // 풀(Pool)에서 안 쓰는 적 미사일을 찾아서 재사용
     let mEl = window.enemyMissilePool.find(el => el.style.display === 'none');
     if (!mEl) {
         mEl = document.createElement('div'); 
@@ -502,6 +491,20 @@ window.processEnemyDeath = function(en) {
     if (en.isBoss) {
         window.createExplosion(en.x, en.y);
         
+        // 🌟 [유지] 유물 드랍 로직 (보스 처치 시 30% 확률)
+        if (!window.isBossRush && Math.random() < 0.3) {
+            let artifactIdx = window.isHellMode ? window.currentDungeonIdx + 20 : window.currentDungeonIdx;
+            if (TOOTH_DATA.artifacts[artifactIdx]) {
+                if (!window.artifactCounts) window.artifactCounts = new Array(30).fill(0);
+                window.artifactCounts[artifactIdx]++; // 1개만 모아도 main.js에서 완성으로 처리됨
+                window.dungeonArtifactDropped = {
+                    name: TOOTH_DATA.artifacts[artifactIdx].name,
+                    icon: TOOTH_DATA.artifacts[artifactIdx].icon,
+                    count: 1
+                };
+            }
+        }
+        
         if (window.isBossRush) {
             if (window.currentWave < 5) {
                 window.currentWave++;
@@ -582,7 +585,6 @@ window.showDiaText = function(x, y, val) {
     worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 1000); 
 };
 
-// 🌟 [버그 해결] 던전 퇴장 시에도 창고(Pool) 완벽 비우기
 window.exitDungeon = function() {
     try {
         window.dungeonActive = false;
