@@ -1,4 +1,4 @@
-// Version: 6.9.6 - Main Engine (Nickname Update Logic, Dials, HELLTEST)
+// Version: 7.2.0 - Main Engine (Artifact 3-Unlock Logic, Pickaxe Power, Awaken Timing Fix)
 
 window.gold = 0; 
 window.dia = 0; 
@@ -26,6 +26,12 @@ window.greatChanceLevel = 0;
 window.nickname = ""; 
 window.highestToothLevel = 1; 
 window.trainingLevels = { hp: 0, atk: 0, spd: 0, crit: 0, splashDmg: 0, splashRange: 0 }; 
+
+// 신규 시스템 변수 (유물, 징표, 각성 여부)
+window.artifactCounts = new Array(30).fill(0);
+window.bossMarks = 0;
+window.isToothAwakened = false;
+
 window.isHellMode = false; 
 window.isBossRush = false;
 window.isResetting = false;
@@ -40,13 +46,17 @@ const safeGetAtk = (lv) => typeof getAtk === 'function' ? getAtk(lv) : 10;
 const safeGetIcon = (lv) => typeof getToothIcon === 'function' ? getToothIcon(lv) : "🦷";
 const getView = () => typeof currentView !== 'undefined' ? currentView : 'mine';
 
+// 🌟 [핵심 변경] 유물 1개 획득 시 완성, 3종류 완성당 기본 채굴 레벨 +1
 window.getBaseMiningLevel = function() {
-    let normalBase = Math.min(10, Math.floor((window.unlockedDungeon - 1) / 2) + 1);
-    let hellBonus = 0;
-    if (window.unlockedHellDungeon > 1) {
-        hellBonus = Math.floor((window.unlockedHellDungeon - 1) / 2);
+    let completedSets = 0;
+    if (window.artifactCounts) {
+        window.artifactCounts.forEach(count => {
+            if (count >= 1) completedSets++; // 1개만 모아도 완성 인정!
+        });
     }
-    return Math.min(24, normalBase + hellBonus); 
+    // 3종류당 +1레벨 추가
+    let extraLevel = Math.floor(completedSets / 3);
+    return Math.min(24, 1 + extraLevel); 
 };
 
 window.onload = () => { 
@@ -54,7 +64,7 @@ window.onload = () => {
     setupMiningTouch(); 
     if(typeof switchView === 'function') switchView('mine'); 
 
-    const introSeen = localStorage.getItem('toothIntroSeen_v5');
+    const introSeen = localStorage.getItem('toothIntroSeen_v7');
     if (introSeen === 'true') {
         const layer = document.getElementById('intro-layer');
         if(layer) layer.style.display = 'none';
@@ -93,7 +103,7 @@ window.finishIntro = function() {
         layer.style.opacity = '0';
         setTimeout(() => {
             layer.style.display = 'none';
-            localStorage.setItem('toothIntroSeen_v5', 'true');
+            localStorage.setItem('toothIntroSeen_v7', 'true');
             window.checkNicknameAndStart();
         }, 1500);
     } else { window.checkNicknameAndStart(); }
@@ -109,25 +119,22 @@ window.checkNicknameAndStart = function() {
     } else { startGameLoop(); }
 };
 
-// 🌟 [핵심 변경] 닉네임 변경 로직 업그레이드
 window.confirmNickname = function() {
     const input = document.getElementById('nickname-input').value.trim();
     if(input.length > 0) {
         window.nickname = input;
         document.getElementById('nickname-modal').style.display = 'none';
         
-        // 설정 창이 열려있다면 즉시 닉네임 텍스트 업데이트
         const nickDisp = document.getElementById('current-nickname-display');
         if(nickDisp) nickDisp.innerText = window.nickname;
 
         saveGame(); 
         
-        // 게임이 처음 시작되는 상황인지, 게임 도중 닉네임을 변경한 상황인지 구분
         if (!gameLoopInterval) {
             startGameLoop(); 
         } else {
             alert("닉네임이 성공적으로 변경되었습니다!");
-            if(typeof window.generateRankings === 'function') window.generateRankings(); // 랭킹창 즉시 갱신
+            if(typeof window.generateRankings === 'function') window.generateRankings(); 
         }
     } else { alert("닉네임을 입력해주세요."); }
 };
@@ -148,16 +155,17 @@ function saveGame() {
         isMuted: window.isMuted, masterVolume: window.masterVolume, slotUpgrades: window.slotUpgrades, globalUpgrades: window.globalUpgrades, 
         greatChanceLevel: window.greatChanceLevel, nickname: window.nickname, 
         highestToothLevel: window.highestToothLevel, trainingLevels: window.trainingLevels,
+        artifactCounts: window.artifactCounts, bossMarks: window.bossMarks, isToothAwakened: window.isToothAwakened, 
         lastTime: Date.now(), 
         isAutoMineOn: window.isAutoMineOn, isAutoMergeOn: window.isAutoMergeOn 
     };
-    localStorage.setItem('toothSaveV695', JSON.stringify(data)); // 세이브 파일 키는 호환성을 위해 유지
+    localStorage.setItem('toothSaveV700', JSON.stringify(data)); 
 }
 window.saveGame = saveGame;
 
 function loadGame() {
     try {
-        const saved = localStorage.getItem('toothSaveV695') || localStorage.getItem('toothSaveV680');
+        const saved = localStorage.getItem('toothSaveV700') || localStorage.getItem('toothSaveV695') || localStorage.getItem('toothSaveV680');
         let d = saved ? JSON.parse(saved) : null;
         if (d) {
             window.gold = d.gold || 0; window.dia = d.dia || 0;
@@ -185,6 +193,10 @@ function loadGame() {
             if (d.globalUpgrades) window.globalUpgrades = d.globalUpgrades;
             if (d.greatChanceLevel) window.greatChanceLevel = d.greatChanceLevel;
             if (d.nickname) window.nickname = d.nickname;
+            
+            if (d.artifactCounts) window.artifactCounts = d.artifactCounts;
+            if (d.bossMarks !== undefined) window.bossMarks = d.bossMarks;
+            if (d.isToothAwakened !== undefined) window.isToothAwakened = d.isToothAwakened;
             
             if (d.lastTime) {
                 const offTime = (Date.now() - d.lastTime) / 1000;
@@ -259,11 +271,39 @@ function addMinedItem() {
 }
 window.addMinedItem = addMinedItem;
 
+// 합성 대성공 시각 효과
+window.showGreatSuccessEffect = function(slotIdx) {
+    const slot = document.getElementById(`slot-${slotIdx}`);
+    if(slot) {
+        const txt = document.createElement('div');
+        txt.className = 'great-success-text';
+        txt.innerText = '✨ +2';
+        slot.appendChild(txt);
+        setTimeout(() => txt.remove(), 800);
+    }
+};
+
+// 🌟 각성 영상 호출 함수 (ui.js에서 봉인 해제 시 사용됨)
+window.playAwakenVideo = function() {
+    const layer = document.getElementById('awaken-video-layer');
+    const vid = document.getElementById('awaken-video');
+    const skipBtn = document.getElementById('skip-awaken-btn');
+    if(layer && vid) {
+        layer.style.display = 'flex';
+        vid.style.display = 'block';
+        if(skipBtn) skipBtn.style.display = 'block';
+        vid.volume = window.masterVolume ? window.masterVolume * 0.3 : 0.6;
+        vid.muted = window.isMuted;
+        vid.play().catch(e => { if(typeof skipAwakenIntro === 'function') skipAwakenIntro(); });
+        vid.onended = () => { setTimeout(() => { if(typeof skipAwakenIntro === 'function') skipAwakenIntro(); }, 500); };
+    }
+};
+
 function autoMergeLowest() { 
     let levelCounts = {}; 
     for(let i=8; i<window.maxSlots; i++) { 
         const lv = window.inventory[i]; 
-        if (lv > 0) levelCounts[lv] = (levelCounts[lv] || 0) + 1; 
+        if (lv > 0 && lv < 24) levelCounts[lv] = (levelCounts[lv] || 0) + 1; // 24렙은 자동합성 제외
     } 
     let targetLv = -1; 
     const levels = Object.keys(levelCounts).map(Number).sort((a,b) => a - b); 
@@ -275,22 +315,39 @@ window.autoMergeLowest = autoMergeLowest;
 function massMerge(lv, once = false) { 
     let indices = []; 
     window.inventory.forEach((val, idx) => { if(idx >= 8 && val === lv && idx < window.maxSlots) indices.push(idx); }); 
-    if(indices.length < 2) return; 
-    try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
+    if(indices.length < 2 || lv >= 24) return; 
     
     const loopCount = once ? 1 : Math.floor(indices.length / 2); 
+    let greatCount = 0;
 
     for(let i=0; i < loopCount; i++) { 
         let idx1 = indices[2*i]; 
         let idx2 = indices[2*i+1]; 
         
-        let nextLv = Math.min(24, lv + 1); 
+        let nextLv = lv + 1; 
+        
+        // 대성공 주사위
+        if (lv < 23 && Math.random() < (window.greatChanceLevel * 0.02)) {
+            nextLv = Math.min(24, lv + 2);
+            greatCount++;
+            window.showGreatSuccessEffect(idx2);
+        }
         
         window.inventory[idx2] = nextLv; 
         window.inventory[idx1] = 0; 
         checkHighestTier(nextLv); 
     } 
+
+    if (greatCount > 0) {
+        try { if(typeof playSfx === 'function') playSfx('great'); } catch(e){}
+    } else {
+        try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
+    }
+
+    // 🌟 24레벨 탄생 시 동영상 자동 재생 제거 (ui.js에서 자물쇠 해제 시 재생)
+
     if(getView() === 'mine') renderInventory(); 
+    saveGame();
 }
 window.massMerge = massMerge;
 
@@ -340,14 +397,27 @@ function renderInventory() {
                 if (window.inventory[i] > 0) { 
                     const currentTime = new Date().getTime(); 
                     const tapLength = currentTime - lastTapTime; 
+                    
                     if (tapLength < 300 && tapLength > 0 && lastTapIdx === i) { 
                         e.preventDefault(); 
-                        massMerge(window.inventory[i]); 
+                        
+                        // 자물쇠 치아 더블클릭 시 해제 창 열기
+                        if (window.inventory[i] === 24 && !window.isToothAwakened) {
+                            if(typeof window.openLockedToothModal === 'function') window.openLockedToothModal(i);
+                        } else {
+                            massMerge(window.inventory[i]); 
+                        }
                         lastTapTime = 0; return; 
                     } 
+                    
                     lastTapTime = currentTime; 
                     lastTapIdx = i; 
                     e.preventDefault(); 
+                    
+                    // 자물쇠 치아는 드래그 금지!
+                    if (window.inventory[i] === 24 && !window.isToothAwakened) {
+                        return;
+                    }
                     
                     window.dragStartIdx = i; 
                     slot.classList.add('picked'); 
@@ -384,8 +454,9 @@ function renderInventory() {
         slot.className = `slot ${i < 8 ? 'attack-slot' : ''} ${i >= window.maxSlots ? 'locked-slot' : ''}`; 
         
         if (i < window.maxSlots && window.inventory[i] > 0) { 
-            const dmg = safeFNum(safeGetAtk(window.inventory[i])); 
-            slot.innerHTML = `<span class="dmg-label">⚔️${dmg}</span>${safeGetIcon(window.inventory[i])}<span class="lv-text">Lv.${window.inventory[i]}</span>`; 
+            const lv = window.inventory[i];
+            const dmg = safeFNum(safeGetAtk(lv)); 
+            slot.innerHTML = `<span class="dmg-label">⚔️${dmg}</span>${safeGetIcon(lv)}<span class="lv-text">Lv.${lv}</span>`; 
         } else if (i >= window.maxSlots) { 
             slot.innerHTML = "🔒"; 
         } else {
@@ -399,11 +470,29 @@ function handleMoveOrMerge(from, to) {
     if (from === to) return; 
     if (window.inventory[from] === window.inventory[to] && window.inventory[from] > 0) { 
         if (window.inventory[from] >= 24) { alert("최대 레벨입니다!"); return; } 
-        let nextLv = Math.min(24, window.inventory[from] + 1); 
+        
+        let curLv = window.inventory[from];
+        let nextLv = curLv + 1; 
+        let isGreat = false;
+
+        if (curLv < 23 && Math.random() < (window.greatChanceLevel * 0.02)) {
+            nextLv = Math.min(24, curLv + 2);
+            isGreat = true;
+        }
+
         window.inventory[to] = nextLv; 
         window.inventory[from] = 0; 
         checkHighestTier(nextLv);
-        try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
+        
+        if (isGreat) {
+            try { if(typeof playSfx === 'function') playSfx('great'); } catch(e){}
+            window.showGreatSuccessEffect(to);
+        } else {
+            try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
+        }
+
+        // 🌟 24레벨 탄생 시 동영상 자동 재생 제거 (ui.js에서 자물쇠 해제 시 재생)
+
     } else { 
         [window.inventory[from], window.inventory[to]] = [window.inventory[to], window.inventory[from]]; 
     } 
@@ -459,7 +548,12 @@ function setupMiningTouch() {
         miner.style.animation = 'hammer 0.08s ease-in-out'; 
         try { if(typeof playSfx === 'function') playSfx('mine'); } catch(e){}
         
+        // 🌟 신규: 곡괭이 성능에 따른 수동 터치 파워업 적용!
         let miningPower = 15;
+        if (typeof TOOTH_DATA !== 'undefined' && TOOTH_DATA.pickaxes[window.pickaxeIdx]) {
+            miningPower = TOOTH_DATA.pickaxes[window.pickaxeIdx].power || 15;
+        }
+
         if (window.highestToothLevel >= 4 && Math.random() < 0.2) { 
             let tapGold = window.getBaseMiningLevel() * 50;
             window.gold += tapGold;
@@ -527,10 +621,13 @@ window.checkCoupon = function(code) {
     else if (code === "HELLTEST") {
         window.unlockedDungeon = 20; 
         window.gold += 1e15; 
-        window.dia += 10000; 
-        alert("🔥 [HELL 테스트 완료] 19단계 클리어 & 1,000조 골드 / 10,000 다이아 지급! 20단계에 도전하세요!");
+        window.dia += 100000; 
+        window.bossMarks += 100;
+        for(let i=0; i<30; i++) window.artifactCounts[i] = 1; // 유물 도감 올클리어
+        alert("🔥 [각성 테스트 완료] 1,000조 골드 / 10만 다이아 / 보스징표 100개 / 유물 올클리어!\n이제 23레벨 2개를 합쳐 봉인을 해제해보세요!");
         updateUI(); saveGame();
         if(typeof renderDungeonList === 'function') window.renderDungeonList();
+        if(typeof renderArtifacts === 'function') window.renderArtifacts();
     }
     else { alert("유효하지 않은 쿠폰입니다."); } 
 };
@@ -540,7 +637,7 @@ window.importSave = function() {
     if (str) { 
         try { 
             const decoded = decodeURIComponent(atob(str)); 
-            localStorage.setItem('toothSaveV695', decoded); 
+            localStorage.setItem('toothSaveV700', decoded); 
             location.reload(); 
         } catch (e) { alert("오류가 발생했습니다. 코드를 확인해주세요."); } 
     } 
