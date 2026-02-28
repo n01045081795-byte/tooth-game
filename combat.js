@@ -1,4 +1,4 @@
-// Version: 6.9.5 - Combat Engine (Object Pooling Optimization for Anti-Lag)
+// Version: 6.9.7 - Combat Engine (Object Pooling Bug Fixed - Pool Reset)
 
 window.dungeonActive = false;
 window.bossDead = false;
@@ -12,7 +12,7 @@ window.relayTimer = 0;
 window.activeSlotIndex = 0;
 window.isBossRush = false;
 
-// 🌟 신규(최적화): 투사체 재사용을 위한 풀(Pool) 배열
+// 투사체 재사용을 위한 풀(Pool) 배열
 window.missilePool = [];
 window.enemyMissilePool = [];
 
@@ -72,9 +72,14 @@ window.startDungeon = function(idx) {
     window.bossDead = false;
     window.currentWave = 1;
     window.isBossWave = window.isBossRush ? true : false; 
+    
+    // 🌟 [버그 해결] 던전 입장 시 모든 배열과 창고(Pool)를 완벽하게 비워줍니다.
     window.enemies = [];
     window.missiles = [];
     window.enemyMissiles = [];
+    window.missilePool = []; 
+    window.enemyMissilePool = [];
+    
     window.relayTimer = 0;
     window.activeSlotIndex = 0;
     
@@ -87,6 +92,7 @@ window.startDungeon = function(idx) {
         curMercIcon = TOOTH_DATA.mercenaries[window.mercenaryIdx].icon;
     }
     
+    // 💡 여기서 화면의 모든 HTML이 엎어쳐지기 때문에 창고(Pool) 비우기가 필수였습니다!
     worldDiv.innerHTML = `<div id="player" style="font-size: 40px; text-shadow: 0 0 5px rgba(255,255,255,0.5);">${curMercIcon}<div id="player-hp-bar-bg"><div id="player-hp-bar-fill"></div></div></div>`;
     
     const p = document.getElementById('player');
@@ -268,7 +274,7 @@ window.updateCombat = function() {
         m.x += m.vx; m.y += m.vy;
         m.el.style.left = m.x + 'px'; m.el.style.top = m.y + 'px';
         
-        // 🌟 최적화: 삭제(remove) 대신 숨김(display = none) 처리 후 배열에서 제거
+        // 최적화: 삭제(remove) 대신 숨김(display = none) 처리 후 배열에서 제거
         if (Math.hypot(m.x - m.startX, m.y - m.startY) > 2000) { 
             m.el.style.display = 'none'; 
             window.missiles.splice(i, 1); 
@@ -322,7 +328,7 @@ window.updateCombat = function() {
                     });
                 }
 
-                // 🌟 최적화: 삭제(remove) 대신 숨김(display = none)
+                // 최적화: 삭제(remove) 대신 숨김(display = none)
                 m.el.style.display = 'none'; 
                 window.missiles.splice(i, 1);
                 
@@ -344,7 +350,7 @@ window.updateCombat = function() {
         em.x += em.vx; em.y += em.vy;
         em.el.style.left = em.x + 'px'; em.el.style.top = em.y + 'px';
 
-        // 🌟 최적화: 삭제(remove) 대신 숨김
+        // 최적화: 삭제(remove) 대신 숨김
         if (Math.hypot(em.x - em.startX, em.y - em.startY) > 1500) { 
             em.el.style.display = 'none'; 
             window.enemyMissiles.splice(i, 1); 
@@ -353,7 +359,7 @@ window.updateCombat = function() {
 
         if (!window.isInvincible && Math.hypot(em.x - window.playerX, em.y - window.playerY) < 30) {
             if(window.takeDamage) window.takeDamage(em.dmg);
-            // 🌟 최적화: 삭제(remove) 대신 숨김
+            // 최적화: 삭제(remove) 대신 숨김
             em.el.style.display = 'none'; 
             window.enemyMissiles.splice(i, 1);
         }
@@ -365,7 +371,7 @@ window.playerShoot = function(slotIdx, target) {
     const worldDiv = document.getElementById('battle-world'); 
     if(!worldDiv) return;
 
-    // 🌟 최적화: 풀(Pool)에서 안 쓰는 미사일을 찾아서 재사용
+    // 풀(Pool)에서 안 쓰는 미사일을 찾아서 재사용
     let mEl = window.missilePool.find(el => el.style.display === 'none');
     if (!mEl) {
         mEl = document.createElement('div'); 
@@ -414,7 +420,7 @@ window.enemyShoot = function(ex, ey, angle, iconStr) {
     const worldDiv = document.getElementById('battle-world'); 
     if(!worldDiv) return;
     
-    // 🌟 최적화: 풀(Pool)에서 안 쓰는 적 미사일을 찾아서 재사용
+    // 풀(Pool)에서 안 쓰는 적 미사일을 찾아서 재사용
     let mEl = window.enemyMissilePool.find(el => el.style.display === 'none');
     if (!mEl) {
         mEl = document.createElement('div'); 
@@ -576,7 +582,7 @@ window.showDiaText = function(x, y, val) {
     worldDiv.appendChild(txt); setTimeout(() => txt.remove(), 1000); 
 };
 
-// 🌟 [핵심 수정] 던전 퇴장 시 목록 강제 갱신 + 풀링된 자원 초기화
+// 🌟 [버그 해결] 던전 퇴장 시에도 창고(Pool) 완벽 비우기
 window.exitDungeon = function() {
     try {
         window.dungeonActive = false;
@@ -587,7 +593,6 @@ window.exitDungeon = function() {
         
         if (window.enemies) window.enemies.forEach(e => { if(e && e.el) e.el.remove() });
         
-        // 🌟 최적화: 풀링된 투사체들은 삭제하지 않고 화면에서 숨김 처리만 수행
         if (window.missiles) window.missiles.forEach(m => { if(m && m.el) m.el.style.display = 'none' });
         if (window.enemyMissiles) window.enemyMissiles.forEach(em => { if(em && em.el) em.el.style.display = 'none' });
         
@@ -596,6 +601,8 @@ window.exitDungeon = function() {
         window.enemies = [];
         window.missiles = [];
         window.enemyMissiles = [];
+        window.missilePool = []; 
+        window.enemyMissilePool = [];
         
         if(typeof updateUI === 'function') window.updateUI();
         
