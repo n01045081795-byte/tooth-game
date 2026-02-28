@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v6.9.6</title>
-    <link rel="stylesheet" href="style.css?v=6.9.6">
+    <title>치아 연대기 v7.2.0</title>
+    <link href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=7.2.0">
 </head>
 <body>
     <div id="intro-layer">
@@ -22,6 +23,13 @@
             <source src="assets/hell.mp4" type="video/mp4">
         </video>
         <button id="skip-hell-btn" onclick="skipHellIntro()" style="display:none;">SKIP ⏩</button>
+    </div>
+
+    <div id="awaken-video-layer" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 35000; flex-direction: column; justify-content: center; align-items: center;">
+        <video id="awaken-video" playsinline style="width: 100%; height: 100%; object-fit: cover; display: none;">
+            <source src="assets/awaken.mp4" type="video/mp4">
+        </video>
+        <button id="skip-awaken-btn" onclick="skipAwakenIntro()" style="display:none; position: absolute; bottom: 50px; right: 20px; background: rgba(0,0,0,0.5); color: white; border: 1px solid white; padding: 8px 20px; font-family:'NeoDunggeunmo', sans-serif;">SKIP ⏩</button>
     </div>
 
     <div id="game-container">
@@ -102,9 +110,9 @@
                         <button class="war-tab-btn hell" onclick="switchDungeonTab('hellboss')" id="d-tab-hellboss" style="display:none;">HELL 토벌전</button>
                     </div>
                     
-                    <div id="boss-rush-info" style="display:none; background:rgba(231,76,60,0.1); border:1px solid #e74c3c; border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px; color:#ffcccc; line-height:1.4;">
+                    <div id="boss-rush-info" style="display:none; background:rgba(231,76,60,0.1); border:1px solid #e74c3c; padding:10px; margin-bottom:10px; font-size:11px; color:#ffcccc; line-height:1.4;">
                         <strong style="color:#e74c3c; font-size:12px;">⚔️ 토벌전 안내</strong><br>
-                        이곳은 강력한 보스들만 연속으로 출현하는 토벌전입니다. 입장에는 <span style="color:var(--gold);">[골드]</span>와 <span style="color:#ff4757;">[다이아]</span>가 소모되지만, 살아남는다면 엄청난 보상이 기다리고 있습니다. 당신의 한계에 도전하세요!
+                        이곳은 강력한 보스들만 연속으로 출현하는 토벌전입니다. 살아남는다면 엄청난 보상과 함께 24레벨 봉인 해제 재료인 '보스 징표'를 획득할 수 있습니다.
                     </div>
 
                     <div id="dungeon-list"></div>
@@ -114,7 +122,8 @@
 
         <nav id="bottom-nav">
             <button onclick="openSettings()" class="bottom-btn">⚙️ 설정</button>
-            <button onclick="openCodex()" class="bottom-btn">📖 도감</button>
+            <button onclick="openCodex()" class="bottom-btn">📖 치아도감</button>
+            <button onclick="openArtifacts()" class="bottom-btn" style="color:var(--gold);">🏺 유물도감</button>
             <button onclick="openRanking()" class="bottom-btn">🏆 랭킹</button>
         </nav>
     </div>
@@ -165,10 +174,9 @@
                 <div class="settings-group">
                     <h4>데이터 관리</h4>
                     <div style="display:flex; gap:5px; margin-bottom:10px;">
-                        <button onclick="exportSaveCode()" class="btn-sm" style="background:#27ae60; flex:1;">💾 저장 코드 발급</button>
+                        <button onclick="exportSaveCode()" class="btn-sm" style="background:#27ae60; flex:1;">💾 저장 코드 발급 (자동 복사)</button>
                         <button onclick="importSave()" class="btn-sm" style="background:#f39c12; flex:1;">📂 로드 (불러오기)</button>
                     </div>
-                    <textarea id="save-export-area" style="display:none; width:100%; height:60px; font-size:10px; background:#111; color:#fff; border:1px solid #444; border-radius:4px; margin-bottom:10px; padding:5px; resize:none;" readonly></textarea>
                     <button onclick="checkReset()" class="btn-sm" style="background:#c0392b; width:100%;">⚠️ 데이터 완전 초기화</button>
                 </div>
 
@@ -211,6 +219,41 @@
         </div>
     </div>
 
+    <div id="artifact-modal" class="modal-layer">
+        <div id="artifact-content" class="modal-box" style="width:95%; max-width:500px;">
+            <div class="sticky-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <h2 style="color:var(--gold); margin:0;">🏺 유물 도감</h2>
+                    <span id="artifact-progress" style="font-size:12px; color:#aaa;">수집률: 0/0</span>
+                </div>
+                <button onclick="closeArtifacts()" style="background:none; border:none; color:#e74c3c; font-size:24px; font-weight:bold; cursor:pointer; padding:0;">✕</button>
+            </div>
+            <div class="modal-content-area">
+                <p style="font-size:11px; color:#ccc; text-align:center; margin-top:0; line-height:1.4;">던전 보스가 드랍하는 유물을 <span style="color:#2ecc71;">1개</span> 획득 시 완성되며,<br>완성된 유물을 <span style="color:#3498db;">3종류</span> 모을 때마다 <strong style="color:var(--gold);">기본 채굴 레벨이 +1</strong> 상승합니다!</p>
+                <div id="artifact-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="locked-tooth-modal" class="modal-layer" style="z-index: 26000;">
+        <div id="locked-tooth-content" class="modal-box" style="text-align:center; border: 3px solid #8e44ad;">
+            <div class="sticky-header">
+                <h2 style="color:#9b59b6; margin:0;">🔒 전설의 봉인 해제</h2>
+                <button onclick="closeLockedToothModal()" style="background:none; border:none; color:#e74c3c; font-size:24px; font-weight:bold; cursor:pointer; padding:0;">✕</button>
+            </div>
+            <div class="modal-content-area">
+                <div style="position:relative; font-size:60px; margin:10px 0; display:inline-block; filter: grayscale(1);">
+                    <div class="tooth-icon effect-tier-7 effect-size-2">👑</div>
+                    <span style="position:absolute; font-size:40px; top:50%; left:50%; transform:translate(-50%, -50%); text-shadow:0 0 10px black;">🔒</span>
+                </div>
+                <p style="font-size:12px; color:#ccc;">진정한 힘을 해방하려면 고대의 재화가 필요합니다.</p>
+                <div id="unlock-requirements" style="background:#222; padding:15px; border-radius:0; border:1px solid #555; margin:15px 0; text-align:left;">
+                    </div>
+                <button id="btn-unlock-tooth" onclick="attemptUnlockTooth()" class="btn-gold" style="width:100%; font-size:16px;">봉인 해제 시도</button>
+            </div>
+        </div>
+    </div>
+
     <div id="training-modal" class="modal-layer">
         <div id="training-content" class="modal-box">
             <div class="sticky-header">
@@ -221,7 +264,7 @@
                 </div>
             </div>
             <div class="modal-content-area">
-                <p style="font-size:11px; color:#ccc; text-align:center; margin-top:0;">다이아를 소모하여 모든 용병의 기본 능력 및 특수 능력을 영구적으로 강화합니다.</p>
+                <p style="font-size:11px; color:#ccc; text-align:center; margin-top:0;">다이아를 소모하여 용병의 능력을 영구적으로 강화합니다.</p>
                 <div id="training-list"></div>
             </div>
         </div>
@@ -250,16 +293,23 @@
             <h1 style="color:var(--gold); text-shadow: 0 0 10px yellow; animation: blink 1s infinite;">🎉 신규 티어 개방! 🎉</h1>
             <div id="tier-unlock-icon" style="font-size:80px; margin:20px 0;"></div>
             <h3 id="tier-unlock-name" style="color:white;">-</h3>
-            <div id="tier-unlock-desc" style="background:rgba(0,0,0,0.5); padding:15px; border-radius:10px; color:#2ecc71; font-weight:bold; margin:15px 0;">-</div>
+            <div id="tier-unlock-desc" style="background:rgba(0,0,0,0.5); padding:15px; border-radius:0; color:#2ecc71; font-weight:bold; margin:15px 0;">-</div>
             <button onclick="closeTierUnlock()" class="btn-gold" style="width:100%; font-size:16px;">멋지다! (보상 수령)</button>
         </div>
     </div>
     
-    <div id="dungeon-result-modal" class="modal-layer">
-        <div id="result-content" class="modal-box" style="text-align:center;">
-            <h2 id="result-title" style="color:var(--gold);">CLEAR!</h2>
+    <div id="dungeon-result-modal" class="modal-layer" style="z-index: 16000;">
+        <div id="result-content" class="modal-box" style="text-align:center; padding: 20px;">
+            <h2 id="result-title" style="color:var(--gold); margin-top:0;">CLEAR!</h2>
             <div id="result-desc"></div>
-            <button onclick="closeResultModal()" class="btn-gold" style="margin-top:20px; width:100%;">확인</button>
+            
+            <div id="result-artifact-area" style="min-height:30px; margin: 15px 0;"></div>
+            
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button onclick="closeResultModal()" class="btn-sm" style="flex:1; background:#7f8c8d; padding:12px 0;">나가기</button>
+                <button onclick="retryDungeon()" class="btn-sm" style="flex:1; background:#e67e22; padding:12px 0;">다시하기</button>
+                <button onclick="nextDungeon()" id="btn-next-dungeon" class="btn-gold" style="flex:1; padding:12px 0;">다음단계</button>
+            </div>
         </div>
     </div>
 
@@ -267,7 +317,7 @@
         <div id="nickname-content" class="modal-box">
             <h3 style="color:var(--gold); margin-top:0;">🆔 닉네임 설정</h3>
             <p style="font-size:12px; color:#ccc;">랭킹에 표시될 이름을 정해주세요.</p>
-            <input type="text" id="nickname-input" style="width:100%; padding:10px; margin:10px 0; text-align:center; font-weight:bold; background:#222; color:white; border:1px solid #444; border-radius:4px;">
+            <input type="text" id="nickname-input" style="width:100%; padding:10px; margin:10px 0; text-align:center; font-weight:bold; font-family:'NeoDunggeunmo', sans-serif; background:#222; color:white; border:2px solid #555; border-radius:0;">
             <button onclick="confirmNickname()" class="btn-gold" style="width:100%;">확인</button>
         </div>
     </div>
@@ -284,11 +334,11 @@
 
     <div id="drag-proxy"></div>
 
-    <script src="data.js?v=6.9.6"></script>
-    <script src="ui.js?v=6.9.6"></script>
-    <script src="upgrade.js?v=6.9.6"></script>
-    <script src="combat.js?v=6.9.6"></script>
-    <script src="battle.js?v=6.9.6"></script>
-    <script src="main.js?v=6.9.6"></script>
+    <script src="data.js?v=7.2.0"></script>
+    <script src="ui.js?v=7.2.0"></script>
+    <script src="upgrade.js?v=7.2.0"></script>
+    <script src="combat.js?v=7.2.0"></script>
+    <script src="battle.js?v=7.2.0"></script>
+    <script src="main.js?v=7.2.0"></script>
 </body>
 </html>
