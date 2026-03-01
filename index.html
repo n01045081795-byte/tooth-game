@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>치아 연대기 v7.2.0</title>
+    <title>치아 연대기 v7.5.0</title>
     <link href="https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=7.2.0">
+    <link rel="stylesheet" href="style.css?v=7.5.0">
 </head>
 <body>
     <div id="intro-layer">
@@ -45,11 +45,7 @@
                     <span class="ui-gold-text">💰 <span id="gold-display">0</span></span>
                     <span class="ui-dia-text" style="margin-left:15px;">♦️ <span id="dia-display">0</span></span>
                 </span>
-                <div class="control-group">
-                    <button id="auto-mine-btn" onclick="toggleAutoMine()" class="btn-toggle" style="background:#2ecc71; color:white;">⛏️ 자동채굴 ON</button>
-                    <button id="auto-merge-btn" onclick="toggleAutoMerge()" class="btn-toggle" style="background:#9b59b6; color:white;">⚡ 자동합성 ON</button>
                 </div>
-            </div>
         </header>
 
         <main id="main-content">
@@ -58,20 +54,28 @@
                     <div id="giant-tooth">🦷</div>
                     <div id="miner-char">⛏️</div>
                 </div>
-                <div id="pickaxe-info" style="flex-direction: row; justify-content: space-around; width: 100%; align-items: center;">
-                    <div style="flex: 1; padding: 0 10px; border-right: 1px solid #333;">
-                        <div id="pickaxe-name" style="text-align:center; margin-bottom:5px; font-weight:bold;">허름한 나무 곡괭이</div>
-                        <div class="progress-wrapper">
-                            <span class="progress-label" style="text-align:left;">채굴</span>
-                            <div class="progress-container"><div id="mine-bar"></div></div>
+                
+                <div id="dashboard" style="display:flex; justify-content: space-around; width: 100%; align-items: center; padding: 8px 0; background: rgba(0,0,0,0.4); border-top: 2px solid #222; border-bottom: 2px solid #000;">
+                    
+                    <div style="display:flex; flex-direction:column; align-items:center; width:80px;">
+                        <div id="mine-dial" style="width: 45px; height: 45px; border-radius: 50%; background: conic-gradient(#00fbff 0%, #333 0%); display:flex; align-items:center; justify-content:center; transition: background 0.1s linear; box-shadow: 2px 2px 0 #000; border:2px solid #555;">
+                            <div style="width: 35px; height: 35px; background: #16213e; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;">⛏️</div>
                         </div>
+                        <button id="auto-mine-btn" onclick="toggleAutoMine()" class="btn-toggle" style="margin-top:8px; background:#2ecc71; color:white; font-size:11px; padding:4px 10px; width:100%; font-weight:bold;">자동 ON</button>
                     </div>
-                    <div id="merge-dial-wrapper" style="display:flex; flex-direction:column; align-items:center; justify-content:center; width: 80px;">
-                        <div id="merge-dial" style="width: 40px; height: 40px; border-radius: 50%; background: conic-gradient(#9b59b6 0%, #333 0%); display:flex; align-items:center; justify-content:center; transition: background 0.1s linear;">
-                            <div style="width: 32px; height: 32px; background: #16213e; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff;">⚡</div>
+
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:10px; color:#aaa; margin-bottom:3px;">현재 장비</div>
+                        <div id="pickaxe-name" style="font-size:12px; font-weight:bold; color:var(--gold); text-shadow: 1px 1px 0 #000; word-break:keep-all;">허름한 나무 곡괭이</div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; align-items:center; width:80px;">
+                        <div id="merge-dial" style="width: 45px; height: 45px; border-radius: 50%; background: conic-gradient(#9b59b6 0%, #333 0%); display:flex; align-items:center; justify-content:center; transition: background 0.1s linear; box-shadow: 2px 2px 0 #000; border:2px solid #555;">
+                            <div style="width: 35px; height: 35px; background: #16213e; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:#fff;">⚡</div>
                         </div>
-                        <span style="font-size: 10px; color: #ccc; margin-top: 5px; font-weight:bold;">자동합성</span>
+                        <button id="auto-merge-btn" onclick="toggleAutoMerge()" class="btn-toggle" style="margin-top:8px; background:#9b59b6; color:white; font-size:11px; padding:4px 10px; width:100%; font-weight:bold;">자동 ON</button>
                     </div>
+
                 </div>
             </div>
 
@@ -334,11 +338,11 @@
 
     <div id="drag-proxy"></div>
 
-    <script src="data.js?v=7.2.0"></script>
-    <script src="ui.js?v=7.2.0"></script>
-    <script src="upgrade.js?v=7.2.0"></script>
-    <script src="combat.js?v=7.2.0"></script>
-    <script src="battle.js?v=7.2.0"></script>
-    <script src="main.js?v=7.2.0"></script>
+    <script src="data.js?v=7.5.0"></script>
+    <script src="ui.js?v=7.5.0"></script>
+    <script src="upgrade.js?v=7.5.0"></script>
+    <script src="combat.js?v=7.5.0"></script>
+    <script src="battle.js?v=7.5.0"></script>
+    <script src="main.js?v=7.5.0"></script>
 </body>
 </html>
