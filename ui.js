@@ -1,4 +1,4 @@
-// Version: 7.2.0 - UI Controllers (Retro Style, Artifacts 1-Set/3-Unlock, Clipboard, Real Rankings, Awaken Timing)
+// Version: 7.5.0 - UI Controllers (Dual Dial Dashboard, Advanced Merc Stats, Restored Tier Unlock)
 
 window.currentView = 'mine';
 window.currentDungeonTab = 'normal';
@@ -56,7 +56,7 @@ window.switchDungeonTab = function(tabName) {
     if(window.renderDungeonList) window.renderDungeonList();
 };
 
-// --- [ 2. 용병 캠프 및 모달 관리 (훈련 스탯 추가 표기) ] ---
+// --- [ 2. 용병 캠프 및 모달 관리 (고급 스탯 표기 추가) ] ---
 window.renderMercenaryCamp = function() { 
     const display = document.getElementById('current-mercenary-display');
     if(!display || typeof TOOTH_DATA === 'undefined') return;
@@ -70,7 +70,7 @@ window.renderMercenaryCamp = function() {
         bonusText = `<div style="color:#2ecc71; font-size:10px; font-weight:bold; margin-top:3px;">✨ 16치아 보너스: 공격력 x2 적용 중!</div>`;
     }
 
-    // 🌟 훈련장 업그레이드 수치 반영
+    // 훈련장 기본 스탯 반영
     let trainAtk = (window.trainingLevels && window.trainingLevels.atk) ? window.trainingLevels.atk * 10 : 0;
     let trainHp = (window.trainingLevels && window.trainingLevels.hp) ? window.trainingLevels.hp * 5 : 0;
     let trainSpd = (window.trainingLevels && window.trainingLevels.spd) ? window.trainingLevels.spd * 10 : 0;
@@ -78,6 +78,23 @@ window.renderMercenaryCamp = function() {
     let atkStr = trainAtk > 0 ? `<span style="color:#2ecc71; font-weight:bold;">(+${trainAtk}%)</span>` : '';
     let hpStr = trainHp > 0 ? `<span style="color:#2ecc71; font-weight:bold;">(+${trainHp}%)</span>` : '';
     let spdStr = trainSpd > 0 ? `<span style="color:#2ecc71; font-weight:bold;">(+${trainSpd}%)</span>` : '';
+
+    // 🌟 신규: 고급 스탯 (치명타, 스플래시) 반영
+    let critLv = (window.trainingLevels && window.trainingLevels.crit) ? window.trainingLevels.crit : 0;
+    let splashDmgLv = (window.trainingLevels && window.trainingLevels.splashDmg) ? window.trainingLevels.splashDmg : 0;
+    let splashRangeLv = (window.trainingLevels && window.trainingLevels.splashRange) ? window.trainingLevels.splashRange : 0;
+
+    let critChance = 5 + (critLv * 2); 
+    let critMul = 2.0 + (critLv * 0.2);
+    let splashRatio = 20 + (splashDmgLv * 5); 
+    let splashRange = 50 + (splashRangeLv * 10); 
+
+    let advStatsHtml = "";
+    if (window.highestToothLevel >= 7 || critLv > 0 || splashDmgLv > 0) {
+        advStatsHtml = `<div style="font-size:10px; color:#f1c40f; margin-top:3px; font-weight:bold;">
+            ⚡치명타: ${critChance}% (x${critMul.toFixed(1)}) | 💥광역: ${splashRatio}% (${splashRange}px)
+        </div>`;
+    }
 
     display.innerHTML = `
         <div style="font-size:40px; background:#1a1a2e; width:60px; height:60px; display:flex; align-items:center; justify-content:center; border:2px solid #555; box-shadow: 2px 2px 0 #000;">${merc.icon}</div>
@@ -88,6 +105,7 @@ window.renderMercenaryCamp = function() {
                 체력 <span style="color:#ff4757;">${safeFNum(merc.baseHp)}</span> ${hpStr} | 
                 이동속도 <span style="color:#3498db;">${merc.spd.toFixed(1)}</span> ${spdStr}
             </div>
+            ${advStatsHtml}
             ${bonusText}
         </div>
     `;
@@ -155,7 +173,39 @@ window.equipMerc = function(id) {
     if(window.saveGame) window.saveGame(); 
 };
 
-// --- [ 3. 던전 리스트 렌더링 (유물 1개 기준 변경) ] ---
+// --- [ 2.5 🌟 신규 티어 달성 알림 완벽 복구! ] ---
+window.showTierUnlock = function(level) {
+    const m = document.getElementById('tier-unlock-modal');
+    const iconDiv = document.getElementById('tier-unlock-icon');
+    const nameDiv = document.getElementById('tier-unlock-name');
+    const descDiv = document.getElementById('tier-unlock-desc');
+    
+    if(m && iconDiv && nameDiv && descDiv) {
+        iconDiv.innerHTML = typeof getToothIcon === 'function' ? getToothIcon(level) : "🦷";
+        nameDiv.innerText = typeof getToothName === 'function' ? getToothName(level) : `Lv.${level}`;
+        
+        let desc = "";
+        if (level === 4) desc = "채굴력 1.2배 상승! (더 빠르게 채굴합니다)";
+        else if (level === 7) desc = "💥 광역 공격 훈련이 개방되었습니다!";
+        else if (level === 10) desc = "⚡ 치명타 훈련이 개방되었습니다!";
+        else if (level === 13) desc = "♦️ 던전 다이아 획득량이 2배로 증가합니다!";
+        else if (level === 16) desc = "⚔️ 용병 공격력이 2배로 증폭됩니다!";
+        else if (level === 19) desc = "🔥 치아 기본 공격력이 10배로 폭증합니다!";
+        else if (level === 22) desc = "👑 모든 던전 보상이 5배로 폭증합니다!";
+        
+        descDiv.innerText = desc;
+        m.style.display = 'flex';
+        try { if(typeof playSfx === 'function') playSfx('unlock'); } catch(e){}
+    }
+};
+
+window.closeTierUnlock = function() {
+    const m = document.getElementById('tier-unlock-modal');
+    if(m) m.style.display = 'none';
+};
+
+
+// --- [ 3. 던전 리스트 렌더링 ] ---
 window.renderDungeonList = function() { 
     const list = document.getElementById('dungeon-list'); 
     if(!list || typeof TOOTH_DATA === 'undefined') return;
@@ -202,7 +252,6 @@ window.renderDungeonList = function() {
             if (isHell) baseHp *= 50;
             const recAtk = (baseHp * 30) / 40;
 
-            // 🌟 1개 기준으로 유물 표시 UI 수정
             let artifactIdx = isHell ? idx + 20 : idx;
             let artifactHtml = "";
             if (window.artifactCounts === undefined) window.artifactCounts = new Array(30).fill(0);
@@ -329,7 +378,7 @@ window.nextDungeon = function() {
     }, 100);
 };
 
-// --- [ 5. 도감 및 유물 도감 시스템 (1개 완성, 3세트당 1업) ] ---
+// --- [ 5. 도감 및 유물 도감 시스템 ] ---
 window.openCodex = function() {
     const m = document.getElementById('codex-modal');
     if(m) { m.style.display = 'flex'; renderCodex(); }
@@ -405,7 +454,7 @@ function renderArtifacts() {
         if(!art) continue;
         
         const count = window.artifactCounts[i];
-        const isCompleted = count >= 1; // 🌟 1개만 모아도 완성!
+        const isCompleted = count >= 1; 
         if(isCompleted) completedSets++;
         
         const item = document.createElement('div');
@@ -421,13 +470,13 @@ function renderArtifacts() {
         grid.appendChild(item);
     }
     
-    let extraMiningLv = Math.floor(completedSets / 3); // 🌟 3종류당 1업 표기
+    let extraMiningLv = Math.floor(completedSets / 3); 
     const progress = document.getElementById('artifact-progress');
     if(progress) progress.innerText = `완성: ${completedSets}/30 (채굴 Lv +${extraMiningLv})`;
 }
 window.renderArtifacts = renderArtifacts;
 
-// --- [ 6. 24레벨 전설의 치아 봉인 해제 로직 (영상 재생 타이밍 변경) ] ---
+// --- [ 6. 24레벨 전설의 치아 봉인 해제 로직 ] ---
 window.openLockedToothModal = function(slotIdx) {
     window.lockedToothSlotIdx = slotIdx;
     const m = document.getElementById('locked-tooth-modal');
@@ -488,7 +537,6 @@ window.attemptUnlockTooth = function() {
             window.isToothAwakened = true;
             closeLockedToothModal();
             
-            // 🌟 신규: 여기서 각성 영상 호출!
             if (typeof window.playAwakenVideo === 'function') {
                 window.playAwakenVideo();
             } else {
@@ -502,7 +550,6 @@ window.attemptUnlockTooth = function() {
     }
 };
 
-// 🌟 영상이 끝나거나 스킵되었을 때 화려한 이펙트 폭발
 window.skipAwakenIntro = function() {
     const vid = document.getElementById('awaken-video');
     if(vid) vid.pause();
@@ -525,10 +572,8 @@ window.skipAwakenIntro = function() {
     if(window.renderInventory) window.renderInventory();
 };
 
+// --- [ 기타 기능 (랭킹, 설정 등) ] ---
 
-// --- [ 기타 기능 (랭킹, 설정 자동복사 등) ] ---
-
-// 🌟 신규: 리얼 랭킹 시스템
 window.generateRankings = function() {
     const list = document.getElementById('ranking-list');
     if(!list || typeof TOOTH_DATA === 'undefined') return;
@@ -629,7 +674,6 @@ window.openNicknameChange = function() {
     }
 };
 
-// 🌟 신규: 저장 코드 자동 클립보드 복사
 window.exportSaveCode = function() {
     const saveData = localStorage.getItem('toothSaveV700') || localStorage.getItem('toothSaveV695');
     if (saveData) {
@@ -709,4 +753,33 @@ window.skipHellIntro = function() {
     if(vid) vid.pause();
     document.getElementById('hell-video-layer').style.display = 'none';
     if(window.currentView === 'war') window.switchView('war');
+};
+
+// 🌟 신규: 듀얼 다이얼 버튼 시각화(회색/컬러) 완벽 연동
+window.updateToggleButtons = function() {
+    const mineBtn = document.getElementById('auto-mine-btn');
+    const mineDial = document.getElementById('mine-dial');
+    if(mineBtn) {
+        mineBtn.innerText = window.isAutoMineOn ? "자동 ON" : "자동 OFF"; 
+        if(!window.isAutoMineOn) {
+            mineBtn.classList.add('off');
+            if(mineDial) mineDial.classList.add('dial-off');
+        } else {
+            mineBtn.classList.remove('off');
+            if(mineDial) mineDial.classList.remove('dial-off');
+        }
+    }
+    
+    const mergeBtn = document.getElementById('auto-merge-btn');
+    const mergeDial = document.getElementById('merge-dial');
+    if(mergeBtn) {
+        mergeBtn.innerText = window.isAutoMergeOn ? "자동 ON" : "자동 OFF"; 
+        if(!window.isAutoMergeOn) {
+            mergeBtn.classList.add('off');
+            if(mergeDial) mergeDial.classList.add('dial-off');
+        } else {
+            mergeBtn.classList.remove('off');
+            if(mergeDial) mergeDial.classList.remove('dial-off');
+        }
+    }
 };
