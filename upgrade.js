@@ -1,4 +1,4 @@
-// Version: 7.2.0 - Upgrade & Training & Refine (Global Refine Top, Show Base Atk)
+// Version: 7.5.0 - Upgrade & Training & Refine (Inventory MAX Button, Adjusted Costs & Idle Balance)
 
 // --- [ 1. Upgrade Lab (상점) ] ---
 window.openShop = function() {
@@ -44,24 +44,25 @@ window.renderShop = function() {
         html += `<div class="shop-item"><div class="shop-info"><span>${maxData.icon} 최고 등급 곡괭이 장착중</span></div><div class="shop-desc">수동 채굴 파워: ${maxData.power}</div><button class="btn-max" style="width:100%; margin-top:5px;" disabled>MAX</button></div>`;
     }
 
-    // 2. 자동 채굴 속도
+    // 2. 자동 채굴 속도 (최대 2초로 밸런스 조정)
     let mineCost = Math.floor(100 * Math.pow(1.5, window.autoMineLevel - 1));
-    let isMineMax = window.autoMineLevel >= 45; 
+    let isMineMax = window.autoMineLevel >= 41; 
+    let currentMineTime = Math.max(2.0, 10.0 - ((window.autoMineLevel - 1) * 0.2));
     html += `
         <div class="shop-item">
             <div class="shop-info">
                 <span>⛏️ 자동 채굴 속도 (Lv.${window.autoMineLevel})</span>
                 <span>${isMineMax ? 'MAX' : (typeof safeFNum === 'function' ? safeFNum(mineCost) : mineCost) + 'G'}</span>
             </div>
-            <div class="shop-desc">현재: ${(Math.max(1, 10 - ((window.autoMineLevel - 1) * 0.2))).toFixed(1)}초마다 채굴</div>
-            <button onclick="buyAutoMine(${mineCost})" class="${isMineMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isMineMax ? 'disabled' : ''}>업그레이드</button>
+            <div class="shop-desc">현재: ${currentMineTime.toFixed(1)}초마다 채굴</div>
+            <button onclick="buyAutoMine(${mineCost})" class="${isMineMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isMineMax ? 'disabled' : ''}>${isMineMax ? 'MAX' : '업그레이드'}</button>
         </div>
     `;
 
-    // 3. 자동 합성 속도
+    // 3. 자동 합성 속도 (최대 20초로 밸런스 조정 - 수동조작 유도!)
     let mergeCost = Math.floor(500 * Math.pow(1.6, window.autoMergeSpeedLevel - 1));
-    let isMergeMax = window.autoMergeSpeedLevel >= 56; 
-    let currentMergeTime = Math.max(2, 30 - ((window.autoMergeSpeedLevel - 1) * 0.5));
+    let isMergeMax = window.autoMergeSpeedLevel >= 41; 
+    let currentMergeTime = Math.max(20.0, 60.0 - ((window.autoMergeSpeedLevel - 1) * 1.0));
     html += `
         <div class="shop-item">
             <div class="shop-info">
@@ -69,7 +70,7 @@ window.renderShop = function() {
                 <span>${isMergeMax ? 'MAX' : (typeof safeFNum === 'function' ? safeFNum(mergeCost) : mergeCost) + 'G'}</span>
             </div>
             <div class="shop-desc">현재: ${currentMergeTime.toFixed(1)}초마다 1회 합성</div>
-            <button onclick="buyAutoMerge(${mergeCost})" class="${isMergeMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isMergeMax ? 'disabled' : ''}>업그레이드</button>
+            <button onclick="buyAutoMerge(${mergeCost})" class="${isMergeMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isMergeMax ? 'disabled' : ''}>${isMergeMax ? 'MAX' : '업그레이드'}</button>
         </div>
     `;
 
@@ -83,25 +84,24 @@ window.renderShop = function() {
                 <span>${isGreatMax ? 'MAX' : (typeof safeFNum === 'function' ? safeFNum(greatCost) : greatCost) + 'G'}</span>
             </div>
             <div class="shop-desc">현재 확률: ${window.greatChanceLevel * 2}% (성공 시 통쾌한 +2업!)</div>
-            <button onclick="buyGreatChance(${greatCost})" class="${isGreatMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isGreatMax ? 'disabled' : ''}>업그레이드</button>
+            <button onclick="buyGreatChance(${greatCost})" class="${isGreatMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isGreatMax ? 'disabled' : ''}>${isGreatMax ? 'MAX' : '업그레이드'}</button>
         </div>
     `;
 
-    // 5. 인벤토리 확장
-    let slotCost = TOOTH_DATA.invExpansion[(window.maxSlots - 24) / 8];
+    // 5. 인벤토리 확장 (🌟 신규: MAX 상태에서도 항목이 사라지지 않음!)
     let isSlotMax = window.maxSlots >= 56;
-    if (!isSlotMax) {
-        html += `
-            <div class="shop-item">
-                <div class="shop-info">
-                    <span>🎒 인벤토리 확장 (${window.maxSlots} ➔ ${window.maxSlots + 8}칸)</span>
-                    <span>${typeof safeFNum === 'function' ? safeFNum(slotCost) : slotCost}G</span>
-                </div>
-                <div class="shop-desc">더 많은 무기를 전장에 배치할 수 있습니다.</div>
-                <button onclick="buyInventorySlot(${slotCost})" class="btn-gold" style="width:100%; margin-top:5px;">확장하기</button>
+    let slotCost = isSlotMax ? 0 : TOOTH_DATA.invExpansion[(window.maxSlots - 24) / 8];
+    
+    html += `
+        <div class="shop-item">
+            <div class="shop-info">
+                <span>🎒 인벤토리 확장 (${window.maxSlots} ➔ ${isSlotMax ? window.maxSlots : window.maxSlots + 8}칸)</span>
+                <span>${isSlotMax ? 'MAX' : (typeof safeFNum === 'function' ? safeFNum(slotCost) : slotCost) + 'G'}</span>
             </div>
-        `;
-    }
+            <div class="shop-desc">더 많은 무기를 전장에 배치할 수 있습니다.</div>
+            <button ${isSlotMax ? '' : `onclick="buyInventorySlot(${slotCost})"`} class="${isSlotMax ? 'btn-max' : 'btn-gold'}" style="width:100%; margin-top:5px;" ${isSlotMax ? 'disabled' : ''}>${isSlotMax ? 'MAX' : '확장하기'}</button>
+        </div>
+    `;
 
     html += `</div>`;
     content.innerHTML = html;
@@ -207,13 +207,12 @@ window.buyTraining = function(id, cost) {
 };
 
 
-// --- [ 3. Top 8 무기 제련 (Refine) - 순서 변경 및 공격력 표시 ] ---
+// --- [ 3. Top 8 무기 제련 (Refine) ] ---
 window.renderRefineView = function() {
     const grid = document.getElementById('refine-grid');
     if(!grid) return;
     grid.innerHTML = '';
 
-    // 🌟 1. 글로벌 제련 (공통 업그레이드를 최상단으로 이동)
     const rngCost = Math.floor(500 * Math.pow(1.8, window.globalUpgrades.rng));
     const cdCost = Math.floor(1000 * Math.pow(2.0, window.globalUpgrades.cd));
 
@@ -238,7 +237,6 @@ window.renderRefineView = function() {
     `;
     grid.appendChild(globalCard);
 
-    // 🌟 2. 개별 슬롯 제련 (하단 배치 및 장착 치아 기본 공격력 명시)
     for(let i=0; i<8; i++) {
         const upg = window.slotUpgrades[i];
         const costAtk = Math.floor(100 * Math.pow(1.5, upg.atk));
@@ -249,7 +247,6 @@ window.renderRefineView = function() {
             let icon = typeof getToothIcon === 'function' ? getToothIcon(window.inventory[i]) : "🦷";
             toothInfo = `${icon} Lv.${window.inventory[i]}`;
             
-            // 현재 장착된 치아의 기본 공격력 계산
             let baseAtk = typeof getAtk === 'function' ? getAtk(window.inventory[i]) : 0;
             atkInfo = `<div style="font-size:10px; color:#e74c3c; font-weight:bold; margin-top:2px;">(기본 공격력: ${typeof safeFNum === 'function' ? safeFNum(baseAtk) : baseAtk})</div>`;
         }
