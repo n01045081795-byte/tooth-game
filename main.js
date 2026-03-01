@@ -1,4 +1,4 @@
-// Version: 7.2.0 - Main Engine (Artifact 3-Unlock Logic, Pickaxe Power, Awaken Timing Fix)
+// Version: 7.5.0 - Main Engine (Idle Balance Adjusted, Great Success FX Fixed, Manual Dial Flash)
 
 window.gold = 0; 
 window.dia = 0; 
@@ -46,15 +46,14 @@ const safeGetAtk = (lv) => typeof getAtk === 'function' ? getAtk(lv) : 10;
 const safeGetIcon = (lv) => typeof getToothIcon === 'function' ? getToothIcon(lv) : "🦷";
 const getView = () => typeof currentView !== 'undefined' ? currentView : 'mine';
 
-// 🌟 [핵심 변경] 유물 1개 획득 시 완성, 3종류 완성당 기본 채굴 레벨 +1
+// 🌟 유물 1개 획득 시 완성, 3종류 완성당 기본 채굴 레벨 +1
 window.getBaseMiningLevel = function() {
     let completedSets = 0;
     if (window.artifactCounts) {
         window.artifactCounts.forEach(count => {
-            if (count >= 1) completedSets++; // 1개만 모아도 완성 인정!
+            if (count >= 1) completedSets++;
         });
     }
-    // 3종류당 +1레벨 추가
     let extraLevel = Math.floor(completedSets / 3);
     return Math.min(24, 1 + extraLevel); 
 };
@@ -71,7 +70,7 @@ window.onload = () => {
         checkNicknameAndStart();
     }
     
-    updateToggleButtons();
+    if(typeof updateToggleButtons === 'function') updateToggleButtons();
 };
 
 window.startIntro = function() {
@@ -201,14 +200,15 @@ function loadGame() {
             if (d.lastTime) {
                 const offTime = (Date.now() - d.lastTime) / 1000;
                 
+                // 🌟 신규 방치형 밸런스 적용 (오프라인 보상)
                 if (window.isAutoMineOn) {
-                    const miningSpeed = Math.max(1, 10 - ((window.autoMineLevel - 1) * 0.2));
+                    const miningSpeed = Math.max(2.0, 10.0 - ((window.autoMineLevel - 1) * 0.2));
                     const minedCount = Math.floor(offTime / miningSpeed); 
                     for(let i=0; i < minedCount; i++) { if(!addMinedItem()) break; }
                 }
                 
                 if (window.isAutoMergeOn) {
-                    const currentMaxTime = Math.max(2000, 30000 - ((window.autoMergeSpeedLevel - 1) * 500));
+                    const currentMaxTime = Math.max(20000, 60000 - ((window.autoMergeSpeedLevel - 1) * 1000));
                     const merges = Math.floor((offTime * 1000) / currentMaxTime);
                     for(let k=0; k < merges; k++) autoMergeLowest();
                 }
@@ -222,14 +222,16 @@ function loadGame() {
 window.loadGame = loadGame;
 
 function gameLoop() { 
+    // 🌟 신규 방치형 밸런스 적용 (최대 2초 채굴)
     if(window.isAutoMineOn) { 
-        const miningSpeedSec = Math.max(1, 10 - ((window.autoMineLevel - 1) * 0.2)); 
+        const miningSpeedSec = Math.max(2.0, 10.0 - ((window.autoMineLevel - 1) * 0.2)); 
         const tickAmt = 100 / (miningSpeedSec * 20); 
         processMining(tickAmt); 
     } 
     
+    // 🌟 신규 방치형 밸런스 적용 (최대 20초 합성)
     if(window.isAutoMergeOn) {
-        const currentMaxTime = Math.max(2000, 30000 - ((window.autoMergeSpeedLevel - 1) * 500)); 
+        const currentMaxTime = Math.max(20000, 60000 - ((window.autoMergeSpeedLevel - 1) * 1000)); 
         const increment = (50 / currentMaxTime) * 100; 
         window.mergeProgress += increment; 
         
@@ -271,19 +273,20 @@ function addMinedItem() {
 }
 window.addMinedItem = addMinedItem;
 
-// 합성 대성공 시각 효과
+// 🌟 대성공 시각 효과 버그 수정! DOM이 준비된 후 텍스트 붙이기
 window.showGreatSuccessEffect = function(slotIdx) {
-    const slot = document.getElementById(`slot-${slotIdx}`);
-    if(slot) {
-        const txt = document.createElement('div');
-        txt.className = 'great-success-text';
-        txt.innerText = '✨ +2';
-        slot.appendChild(txt);
-        setTimeout(() => txt.remove(), 800);
-    }
+    setTimeout(() => {
+        const slot = document.getElementById(`slot-${slotIdx}`);
+        if(slot) {
+            const txt = document.createElement('div');
+            txt.className = 'great-success-text';
+            txt.innerText = '✨ +2';
+            slot.appendChild(txt);
+            setTimeout(() => txt.remove(), 800);
+        }
+    }, 10); // UI 렌더링 딜레이를 약간 줌
 };
 
-// 🌟 각성 영상 호출 함수 (ui.js에서 봉인 해제 시 사용됨)
 window.playAwakenVideo = function() {
     const layer = document.getElementById('awaken-video-layer');
     const vid = document.getElementById('awaken-video');
@@ -303,7 +306,7 @@ function autoMergeLowest() {
     let levelCounts = {}; 
     for(let i=8; i<window.maxSlots; i++) { 
         const lv = window.inventory[i]; 
-        if (lv > 0 && lv < 24) levelCounts[lv] = (levelCounts[lv] || 0) + 1; // 24렙은 자동합성 제외
+        if (lv > 0 && lv < 24) levelCounts[lv] = (levelCounts[lv] || 0) + 1; 
     } 
     let targetLv = -1; 
     const levels = Object.keys(levelCounts).map(Number).sort((a,b) => a - b); 
@@ -319,6 +322,7 @@ function massMerge(lv, once = false) {
     
     const loopCount = once ? 1 : Math.floor(indices.length / 2); 
     let greatCount = 0;
+    let lastGreatIdx = -1;
 
     for(let i=0; i < loopCount; i++) { 
         let idx1 = indices[2*i]; 
@@ -326,11 +330,10 @@ function massMerge(lv, once = false) {
         
         let nextLv = lv + 1; 
         
-        // 대성공 주사위
         if (lv < 23 && Math.random() < (window.greatChanceLevel * 0.02)) {
             nextLv = Math.min(24, lv + 2);
             greatCount++;
-            window.showGreatSuccessEffect(idx2);
+            lastGreatIdx = idx2;
         }
         
         window.inventory[idx2] = nextLv; 
@@ -338,15 +341,16 @@ function massMerge(lv, once = false) {
         checkHighestTier(nextLv); 
     } 
 
+    // 🌟 이펙트 소멸 방지를 위해 renderInventory를 먼저 실행!
+    if(getView() === 'mine') renderInventory(); 
+
     if (greatCount > 0) {
         try { if(typeof playSfx === 'function') playSfx('great'); } catch(e){}
+        if (lastGreatIdx !== -1) window.showGreatSuccessEffect(lastGreatIdx);
     } else {
         try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
     }
 
-    // 🌟 24레벨 탄생 시 동영상 자동 재생 제거 (ui.js에서 자물쇠 해제 시 재생)
-
-    if(getView() === 'mine') renderInventory(); 
     saveGame();
 }
 window.massMerge = massMerge;
@@ -355,6 +359,7 @@ function checkHighestTier(level) {
     if (level > window.highestToothLevel && level <= 24) {
         window.highestToothLevel = level;
         saveGame();
+        // 🌟 신규 티어 알림 함수 호출 (ui.js에 완벽 복구됨!)
         if ((level - 1) % 3 === 0 && level > 1) {
             if(typeof showTierUnlock === 'function') showTierUnlock(level);
         }
@@ -368,12 +373,15 @@ function updateUI() {
     const dd = document.getElementById('dia-display');
     if(dd) dd.innerText = safeFNum(window.dia); 
     
-    const m = document.getElementById('mine-bar'); 
-    if(m) m.style.width = window.mineProgress + '%'; 
+    // 🌟 듀얼 다이얼 게이지 동기화
+    const mineDial = document.getElementById('mine-dial'); 
+    if(mineDial && window.isAutoMineOn) {
+        mineDial.style.background = `conic-gradient(#00fbff 0%, #00fbff ${window.mineProgress}%, #333 ${window.mineProgress}%, #333 100%)`;
+    } 
     
-    const dial = document.getElementById('merge-dial'); 
-    if(dial) {
-        dial.style.background = `conic-gradient(#9b59b6 0%, #9b59b6 ${window.mergeProgress}%, #333 ${window.mergeProgress}%, #333 100%)`;
+    const mergeDial = document.getElementById('merge-dial'); 
+    if(mergeDial && window.isAutoMergeOn) {
+        mergeDial.style.background = `conic-gradient(#9b59b6 0%, #9b59b6 ${window.mergeProgress}%, #333 ${window.mergeProgress}%, #333 100%)`;
     } 
     
     const pn = document.getElementById('pickaxe-name');
@@ -400,8 +408,6 @@ function renderInventory() {
                     
                     if (tapLength < 300 && tapLength > 0 && lastTapIdx === i) { 
                         e.preventDefault(); 
-                        
-                        // 자물쇠 치아 더블클릭 시 해제 창 열기
                         if (window.inventory[i] === 24 && !window.isToothAwakened) {
                             if(typeof window.openLockedToothModal === 'function') window.openLockedToothModal(i);
                         } else {
@@ -414,10 +420,7 @@ function renderInventory() {
                     lastTapIdx = i; 
                     e.preventDefault(); 
                     
-                    // 자물쇠 치아는 드래그 금지!
-                    if (window.inventory[i] === 24 && !window.isToothAwakened) {
-                        return;
-                    }
+                    if (window.inventory[i] === 24 && !window.isToothAwakened) return;
                     
                     window.dragStartIdx = i; 
                     slot.classList.add('picked'); 
@@ -484,6 +487,9 @@ function handleMoveOrMerge(from, to) {
         window.inventory[from] = 0; 
         checkHighestTier(nextLv);
         
+        // 🌟 렌더링 먼저 실행하여 버그 방지
+        renderInventory(); 
+
         if (isGreat) {
             try { if(typeof playSfx === 'function') playSfx('great'); } catch(e){}
             window.showGreatSuccessEffect(to);
@@ -491,12 +497,20 @@ function handleMoveOrMerge(from, to) {
             try { if(typeof playSfx === 'function') playSfx('merge'); } catch(e){}
         }
 
-        // 🌟 24레벨 탄생 시 동영상 자동 재생 제거 (ui.js에서 자물쇠 해제 시 재생)
+        // 🌟 수동 조작 손맛: 합성 다이얼이 꺼져있을 때 플래시 효과!
+        if (!window.isAutoMergeOn) {
+            const mDial = document.getElementById('merge-dial');
+            if (mDial) {
+                mDial.style.filter = "brightness(2) drop-shadow(0 0 10px #9b59b6)";
+                setTimeout(() => { mDial.style.filter = "grayscale(1) brightness(0.6)"; }, 150);
+            }
+        }
 
     } else { 
         [window.inventory[from], window.inventory[to]] = [window.inventory[to], window.inventory[from]]; 
+        renderInventory(); 
     } 
-    renderInventory(); saveGame(); 
+    saveGame(); 
 }
 window.handleMoveOrMerge = handleMoveOrMerge;
 
@@ -548,7 +562,6 @@ function setupMiningTouch() {
         miner.style.animation = 'hammer 0.08s ease-in-out'; 
         try { if(typeof playSfx === 'function') playSfx('mine'); } catch(e){}
         
-        // 🌟 신규: 곡괭이 성능에 따른 수동 터치 파워업 적용!
         let miningPower = 15;
         if (typeof TOOTH_DATA !== 'undefined' && TOOTH_DATA.pickaxes[window.pickaxeIdx]) {
             miningPower = TOOTH_DATA.pickaxes[window.pickaxeIdx].power || 15;
@@ -577,6 +590,15 @@ function setupMiningTouch() {
         effect.style.pointerEvents = 'none';
         document.body.appendChild(effect); 
         setTimeout(() => effect.remove(), 400); 
+
+        // 🌟 수동 조작 손맛: 채굴 다이얼이 꺼져있을 때 광클하면 빛나는 효과!
+        if (!window.isAutoMineOn) {
+            const mDial = document.getElementById('mine-dial');
+            if (mDial) {
+                mDial.style.filter = "brightness(2) drop-shadow(0 0 10px #00fbff)";
+                setTimeout(() => { mDial.style.filter = "grayscale(1) brightness(0.6)"; }, 100);
+            }
+        }
         
         updateUI(); saveGame();
     }); 
@@ -585,29 +607,15 @@ window.setupMiningTouch = setupMiningTouch;
 
 window.toggleAutoMine = function() { 
     window.isAutoMineOn = !window.isAutoMineOn; 
-    updateToggleButtons();
+    if(typeof updateToggleButtons === 'function') updateToggleButtons();
     saveGame(); 
 };
 
 window.toggleAutoMerge = function() { 
     window.isAutoMergeOn = !window.isAutoMergeOn; 
-    updateToggleButtons();
+    if(typeof updateToggleButtons === 'function') updateToggleButtons();
     saveGame(); 
 };
-
-function updateToggleButtons() {
-    const mineBtn = document.getElementById('auto-mine-btn');
-    if(mineBtn) {
-        mineBtn.innerText = window.isAutoMineOn ? "⛏️ 자동채굴 ON" : "⛏️ 자동채굴 OFF"; 
-        if(!window.isAutoMineOn) mineBtn.classList.add('off'); else mineBtn.classList.remove('off');
-    }
-    const mergeBtn = document.getElementById('auto-merge-btn');
-    if(mergeBtn) {
-        mergeBtn.innerText = window.isAutoMergeOn ? "⚡ 자동합성 ON" : "⚡ 자동합성 OFF"; 
-        if(!window.isAutoMergeOn) mergeBtn.classList.add('off'); else mergeBtn.classList.remove('off');
-    }
-}
-window.updateToggleButtons = updateToggleButtons;
 
 window.checkCoupon = function(code) { 
     if (code === "100b" || code === "RICH100B") { window.gold += 100000000000; alert("치트키 적용!"); updateUI(); saveGame(); } 
@@ -623,7 +631,7 @@ window.checkCoupon = function(code) {
         window.gold += 1e15; 
         window.dia += 100000; 
         window.bossMarks += 100;
-        for(let i=0; i<30; i++) window.artifactCounts[i] = 1; // 유물 도감 올클리어
+        for(let i=0; i<30; i++) window.artifactCounts[i] = 1; 
         alert("🔥 [각성 테스트 완료] 1,000조 골드 / 10만 다이아 / 보스징표 100개 / 유물 올클리어!\n이제 23레벨 2개를 합쳐 봉인을 해제해보세요!");
         updateUI(); saveGame();
         if(typeof renderDungeonList === 'function') window.renderDungeonList();
