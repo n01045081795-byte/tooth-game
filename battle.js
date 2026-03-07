@@ -1,4 +1,4 @@
-// Version: 7.2.0 - Battle Physics & Joystick (Optimized Movement, HP System & PC Keyboard Support)
+// Version: 7.5.1 - Battle Physics & Joystick (60FPS Fixed for VRR Devices)
 
 window.playerX = 1000;
 window.playerY = 1000;
@@ -13,6 +13,10 @@ let joystickActive = false;
 let originX = 0;
 let originY = 0;
 let battleLoopId = null;
+
+// --- [ 🌟 프레임 고정 변수 추가 ] ---
+let lastBattleTime = performance.now();
+const fpsInterval = 1000 / 60; // 60 FPS 고정 (초당 60회 연산)
 
 window.renderBattleSlots = function() {
     const slots = document.getElementById('war-weapon-slots');
@@ -42,15 +46,27 @@ window.renderBattleSlots = function() {
     let spdBonus = (window.trainingLevels && window.trainingLevels.spd) ? window.trainingLevels.spd * 0.1 : 0;
     window.currentPlayerSpeed = window.baseSpeed * pSpd * (1 + spdBonus);
 
-    if (!battleLoopId) battleLoop();
+    if (!battleLoopId) {
+        lastBattleTime = performance.now(); // 루프 시작 시 시간 초기화
+        battleLoop();
+    }
 };
 
-function battleLoop() {
-    if (window.dungeonActive && !window.bossDead) {
-        updatePlayerPosition();
-        if(typeof window.updateCombat === 'function') window.updateCombat();
-    }
+// --- [ 🌟 60FPS 고정 전투 루프 (VRR 가속 방지) ] ---
+function battleLoop(timestamp) {
     battleLoopId = requestAnimationFrame(battleLoop);
+
+    if (!timestamp) timestamp = performance.now();
+    let elapsed = timestamp - lastBattleTime;
+
+    if (elapsed >= fpsInterval) {
+        lastBattleTime = timestamp - (elapsed % fpsInterval);
+
+        if (window.dungeonActive && !window.bossDead) {
+            updatePlayerPosition();
+            if(typeof window.updateCombat === 'function') window.updateCombat();
+        }
+    }
 }
 
 function updatePlayerPosition() {
